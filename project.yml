@@ -30,11 +30,13 @@ targets:
     platform: iOS
     sources:
       - SahaSatis
+      - Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
         TARGETED_DEVICE_FAMILY: "1"
-        ASSETCATALOG_COMPILER_GENERATE_SWIFT_SYMBOL_EXTENSIONS: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     info:
       path: Generated/SahaSatis-Info.plist
       properties:
@@ -71,6 +73,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widget
         TARGETED_DEVICE_FAMILY: "1"
         SKIP_INSTALL: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     info:
       path: Generated/SahaSatisWidget-Info.plist
       properties:

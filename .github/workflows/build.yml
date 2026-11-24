@@ -68,6 +68,10 @@ jobs:
           xcrun simctl launch "$UDID" "$BUNDLE_ID"
           sleep 5
           xcrun simctl io "$UDID" screenshot artifacts/screenshots/app.png
+          xcrun simctl ui "$UDID" appearance dark
+          sleep 2
+          xcrun simctl io "$UDID" screenshot artifacts/screenshots/app-dark.png
+          xcrun simctl ui "$UDID" appearance light
 
       - name: Artifact yükle
         if: always()

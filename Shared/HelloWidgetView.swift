@@ -9,12 +9,13 @@ struct HelloWidgetView: View {
         VStack(spacing: 6) {
             Image(systemName: "hand.wave.fill")
                 .font(.title)
-                .foregroundStyle(.orange)
+                .foregroundStyle(Theme.action)
             Text("Merhaba")
                 .font(.headline)
+                .foregroundStyle(Theme.textPrimary)
             Text("Bugün için takip yok")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

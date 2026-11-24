@@ -6,13 +6,16 @@ struct ContentView: View {
             VStack(spacing: 12) {
                 Image(systemName: "briefcase.fill")
                     .font(.system(size: 56))
-                    .foregroundStyle(.tint)
+                    .foregroundStyle(Theme.brand)
                 Text("Saha Satış")
                     .font(.largeTitle.bold())
+                    .foregroundStyle(Theme.textPrimary)
                 Text("Faz 0 – altyapı hazır")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textSecondary)
             }
             .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.background)
             .navigationTitle("Bugün")
         }
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 import XCTest
 
-/// Widget görünümlerini PNG'ye çevirir. CI bu dosyaları artifact olarak yükler.
+/// Widget görünümlerini açık ve koyu modda PNG'ye çevirir. CI bu dosyaları artifact olarak yükler.
 /// Çıktı klasörü: TEST_RUNNER_SCREENSHOT_DIR ortam değişkeni (yoksa geçici klasör).
 final class ScreenshotTests: XCTestCase {
     private var outputDirectory: URL {
@@ -12,10 +12,11 @@ final class ScreenshotTests: XCTestCase {
     }
 
     @MainActor
-    private func render(name: String, size: CGSize) throws {
+    private func render(name: String, size: CGSize, scheme: ColorScheme) throws {
         let view = HelloWidgetView(date: Date())
             .frame(width: size.width, height: size.height)
-            .background(Color(.secondarySystemBackground))
+            .background(Theme.background)
+            .environment(\.colorScheme, scheme)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 3
 
@@ -33,11 +34,13 @@ final class ScreenshotTests: XCTestCase {
 
     @MainActor
     func testRenderSmallWidget() throws {
-        try render(name: "widget-small", size: CGSize(width: 158, height: 158))
+        try render(name: "widget-small", size: CGSize(width: 158, height: 158), scheme: .light)
+        try render(name: "widget-small-dark", size: CGSize(width: 158, height: 158), scheme: .dark)
     }
 
     @MainActor
     func testRenderMediumWidget() throws {
-        try render(name: "widget-medium", size: CGSize(width: 338, height: 158))
+        try render(name: "widget-medium", size: CGSize(width: 338, height: 158), scheme: .light)
+        try render(name: "widget-medium-dark", size: CGSize(width: 338, height: 158), scheme: .dark)
     }
 }

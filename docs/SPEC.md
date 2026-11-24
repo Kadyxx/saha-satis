@@ -193,6 +193,30 @@ Dört widget var: iki ana ekran, iki kilit ekranı. Hepsi aynı SwiftData deposu
 - Uygulamada görev, ziyaret veya teklif değişince `WidgetCenter.shared.reloadAllTimelines()`.
 - Boş durum metni: "Bugün için takip yok".
 
+## Renk paleti
+
+Tüm renkler `Shared/Assets.xcassets` içinde açık/koyu mod varyantlı "Color Set" olarak tanımlıdır ve kodda yalnızca `Theme.swift` içindeki isimli sabitlerle kullanılır; kodda doğrudan hex yazılmaz. Widget'lar ve uygulama ikonu da bu paleti kullanır. `AccentColor` = `brand`.
+
+| Rol | Açık mod | Koyu mod |
+| --- | --- | --- |
+| `background` | #EFE8DD | #22272F |
+| `surface` (kart) | #F8F5EF | #303841 |
+| `textPrimary` | #303841 | #EFE8DD |
+| `textSecondary` | #5A6270 | #9AA3AE |
+| `brand` (seçili, rozet) | #76ABAE | #76ABAE |
+| `brandText` (turkuaz yazı) | #2F6265 | #76ABAE |
+| `action` (+Ziyaret, bugün) | #FF5722 | #FF7A50 |
+| `onAction` / `onBrand` | #303841 | #22272F |
+| `overdue` (gecikmiş) | #B3261E | #FF6B6B |
+| `done` (tamamlandı) | #76ABAE | #76ABAE |
+
+**Değerlendirme rozetleri:** Önemli = `action`, Potansiyelli = `brand`, Zayıf = #9AA3AE (her iki modda; `ratingWeak`).
+
+**Kurallar**
+
+- #76ABAE (`brand`) ve #FF5722 (`action`) açık zeminde küçük yazı rengi olarak kullanılmaz (kontrast yetersiz). Turkuaz yazı için `brandText`; bu renklerin üstündeki yazı `onAction` / `onBrand` olur.
+- `onAction` ve `onBrand` şimdilik aynı değerlere sahiptir ama ayrı Color Set'lerdir; gerekirse ayrışabilir.
+
 ## Yapay zekâ ve kartvizit
 
 Yapay zekâ `NoteAssistant` protokolü arkasında yazılır ve iki uygulaması olur. Kullanıcının iPhone 14 Pro'su Apple Intelligence'ı desteklemediği için (iPhone 15 Pro ve sonrası gerekir) cihaz üstü model ona kapalıdır; ikinci seçenek ona yöneliktir. Hiçbiri yoksa yapay zekâ butonları gizlenir ve uygulama tam çalışır.

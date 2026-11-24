@@ -25,7 +25,7 @@ struct HelloWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: HelloProvider()) { entry in
             HelloWidgetView(date: entry.date)
-                .containerBackground(.fill.tertiary, for: .widget)
+                .containerBackground(Theme.background, for: .widget)
         }
         .configurationDisplayName("Merhaba")
         .description("Saha Satış altyapı denemesi.")

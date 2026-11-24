@@ -1,0 +1,112 @@
+name: SahaSatis
+
+# .xcodeproj repoya girmez; CI'da `xcodegen generate` ile üretilir.
+# Info.plist ve .entitlements dosyaları da Generated/ altında üretilir (git'e girmez).
+
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+# ---------------------------------------------------------------------------
+# TEK YERDEN AYAR: Apple Developer hesabı onaylanınca aşağıdaki üç kimliği
+# Identifiers sayfasında oluşturduğun değerlerle değiştir (README / SPEC'e bak).
+# Entitlements ve Info.plist bu değerlere $(...) ile başvurur.
+# ---------------------------------------------------------------------------
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    APP_BUNDLE_ID: com.example.sahasatis
+    APP_GROUP_ID: group.com.example.sahasatis
+    ICLOUD_CONTAINER_ID: iCloud.com.example.sahasatis
+
+targets:
+  SahaSatis:
+    type: application
+    platform: iOS
+    sources:
+      - SahaSatis
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_SYMBOL_EXTENSIONS: NO
+    info:
+      path: Generated/SahaSatis-Info.plist
+      properties:
+        CFBundleDisplayName: Saha Satış
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ITSAppUsesNonExemptEncryption: false
+    entitlements:
+      path: Generated/SahaSatis.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(APP_GROUP_ID)
+        com.apple.developer.icloud-container-identifiers:
+          - $(ICLOUD_CONTAINER_ID)
+        com.apple.developer.icloud-services:
+          - CloudKit
+        com.apple.developer.applesignin:
+          - Default
+    dependencies:
+      - target: SahaSatisWidget
+        embed: true
+
+  SahaSatisWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - SahaSatisWidget
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widget
+        TARGETED_DEVICE_FAMILY: "1"
+        SKIP_INSTALL: YES
+    info:
+      path: Generated/SahaSatisWidget-Info.plist
+      properties:
+        CFBundleDisplayName: Saha Satış
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Generated/SahaSatisWidget.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(APP_GROUP_ID)
+
+  SahaSatisTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - SahaSatisTests
+      - Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: SahaSatis
+
+schemes:
+  SahaSatis:
+    build:
+      targets:
+        SahaSatis: all
+        SahaSatisWidget: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - SahaSatisTests

@@ -43,6 +43,7 @@ targets:
         CFBundleDisplayName: Saha Satış
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        AppGroupID: $(APP_GROUP_ID)
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

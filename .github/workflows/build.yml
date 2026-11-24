@@ -72,6 +72,19 @@ jobs:
           sleep 2
           xcrun simctl io "$UDID" screenshot artifacts/screenshots/app-dark.png
           xcrun simctl ui "$UDID" appearance light
+          xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+
+          # Müşteri ekranları: yalnızca DEBUG derlemesinde, bellek içi hayali örnek veriyle.
+          for scene in customers detail form; do
+            for mode in light dark; do
+              xcrun simctl ui "$UDID" appearance "$mode"
+              xcrun simctl launch "$UDID" "$BUNDLE_ID" -DebugSampleData -DebugScene "$scene"
+              sleep 5
+              xcrun simctl io "$UDID" screenshot "artifacts/screenshots/screen-$scene-$mode.png"
+              xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
+            done
+          done
+          xcrun simctl ui "$UDID" appearance light
 
       - name: Artifact yükle
         if: always()

@@ -42,6 +42,41 @@ Giriş (Sign in with Apple), iCloud senkronu, ekranlar ve hatırlatma motoru **y
     ziyaret girilince `visitFrequency` görevini kapatma, `ReminderScheduler`, ayarlar (`AppSettings`).
     Bunlar iş kuralı/servis katmanıdır, veri katmanının parçası değil.
 
+## Ana gezinme ve müşteri ekranları — kararlar
+
+1. **Sekmeler:** Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar (`RootTabView`). Müşteriler dışındakiler
+   `PlaceholderView` (boş ekran + kısa açıklama). Seçili/metin vurgusu `Theme.brandText`; `AccentColor` brand
+   olarak kaldı ama küçük yazıda açık zeminde kontrast kuralı gereği `.tint(Theme.brandText)` verilir.
+2. **Bölge şehirleri:** `AppSettings.responsibleCities` (UserDefaults, App Group paylaşımlı; grup kimliği
+   Info.plist'teki `AppGroupID` anahtarından). Varsayılan SPEC'teki 8 şehir; sabit enum yok. Ayarlar ekranı
+   henüz yok, liste şimdilik koddan/ileride Ayarlar'dan değişir. Müşterinin mevcut şehri listede yoksa formda
+   seçenek olarak korunur; filtre menüsü bölge şehirleri + verideki diğer şehirleri gösterir.
+3. **Liste durumu:** `CustomerListModel` (@Observable) yalnızca `CustomerRepository` kullanır. Sıralama: ada göre,
+   son ziyaret yeni→eski, son ziyaret eski→yeni. Arama Türkçe büyük/küçük harf duyarsız.
+4. **Detay tek kaydırılabilir liste:** SPEC "sekmeler" diyor (Kişiler, Geçmiş, Fırsatlar, Kurulu baz, Notlar);
+   ilk sürümde sekme yerine alt alta bölümler yaptım (daha az kod, derleme riski düşük). Ziyaret geçmişi ve
+   Fırsatlar boş başlık; Kurulu baz kayıt varsa listelenir (ekleme arayüzü yok). Migrasyon etiketi detay üst
+   kartında.
+5. **Kişi bağlantıları:** `ContactLink` — telefon `tel:`, e-posta `mailto:`, WhatsApp `https://wa.me/<ulke-kodlu>`.
+   Numara Türkiye varsayımıyla uluslararası biçime çevrilir (0555… → 90555…, +/00 önekli olduğu gibi).
+   Kişi satırında sola kaydırma: Sil; sağa kaydırma: Düzenle. Birden çok düğme tek satırda olduğu için
+   `.buttonStyle(.borderless)` kullanıldı.
+6. **Müşteri silme:** detaydan menüyle, onay sorulur. Silinmiş modele ekran hâlâ bakmasın diye liste ekranı önce
+   detaydan çıkar, 0,6 sn sonra siler.
+7. **Örnek veri ve ekran görüntüleri:** hayali 6 firma `SampleData` içinde, yalnızca `#if DEBUG`. Uygulama
+   `-DebugSampleData` argümanıyla açılırsa bellek içi depo + örnek veri kullanır (diske yazılmaz);
+   `-DebugScene customers|detail|form` ilgili ekranı açar. Release derlemesinde bu seçenekler hep kapalıdır.
+   CI bu ekranların açık ve koyu görüntülerini `screen-<ekran>-<mod>.png` olarak artifact'e koyar.
+   (ImageRenderer List/NavigationStack'i düzgün çizemediği için gerçek simülatör ekran görüntüsü yöntemi seçildi.)
+8. **Bilinçli olarak yapılmayanlar:** "+ Ziyaret" hızlı butonu, Ayarlar ekranı (şehir listesi düzenleme),
+   Bugün ekranı, ziyaret/fırsat/kurulu baz ekleme arayüzleri, CSV içe aktarma.
+
 ## Durum günlüğü
 
 - Palet (Color Set, `Theme.swift`, ikon) tamamlandı ve CI'da yeşil.
+- Veri katmanı tamamlandı, CI yeşil (41 test). **Deneme 1 başarısız oldu:** `.gitignore`'daki `data/` kuralı
+  Windows'ta büyük/küçük harf duyarsız eşleşip `SahaSatis/Data/` klasörünü yutmuştu (dosyalar hiç push edilmedi,
+  `Persistence` bulunamadı). Kural `/data/` ve `/customer-data/` olarak kök dizine daraltıldı. Deneme 2 yeşil.
+  Ders: yeni klasör eklerken `git status` / `git ls-files` ile dosyaların gerçekten izlendiği kontrol edilmeli.
+- CI runner'ı `macos-15-intel`: arm64 macOS havuzunda kapasite olmadığı için (iş 15+ dk atanamadı) geçildi.
+  Arm64 kapasitesi düzelirse `macos-15`'e dönülebilir.

@@ -14,8 +14,8 @@ secrets.xcconfig
 *.csv
 *.xlsx
 *.xls
-customer-data/
-data/
+/customer-data/
+/data/
 
 # --- XcodeGen çıktıları ve derleme çıktıları ---
 *.xcodeproj

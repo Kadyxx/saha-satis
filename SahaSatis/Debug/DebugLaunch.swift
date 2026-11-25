@@ -25,6 +25,9 @@ enum DebugScene: String {
     case quotes
     case quoteDetail
     case quoteForm
+    case region
+    case regionCity
+    case regionDistrict
 }
 
 enum DebugLaunch {

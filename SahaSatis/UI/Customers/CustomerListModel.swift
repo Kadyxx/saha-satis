@@ -34,7 +34,21 @@ final class CustomerListModel {
         return options
     }
 
+    /// Filtre menüsündeki ilçe seçenekleri: verideki ilçeler (şehir seçiliyse yalnızca o şehrinkiler), resmi yazımla,
+    /// Türkçe alfabetik. Aynı ilçenin farklı yazımları tek seçenek olur.
+    func districtOptions() -> [String] {
+        guard let all = try? repository.fetchAll() else { return [] }
+        var seen: [String: String] = [:]
+        for customer in all {
+            if let city = filter.city, DistrictCatalog.normalize(city) != DistrictCatalog.normalize(customer.city) { continue }
+            let name = DistrictCatalog.displayName(customer.district, city: customer.city)
+            guard !name.isEmpty else { continue }
+            seen[DistrictCatalog.normalize(name)] = seen[DistrictCatalog.normalize(name)] ?? name
+        }
+        return seen.values.sorted { $0.compare($1, locale: AppFormat.locale) == .orderedAscending }
+    }
+
     var hasActiveFilter: Bool {
-        filter.city != nil || filter.status != nil || filter.rating != nil
+        filter.city != nil || filter.district != nil || filter.status != nil || filter.rating != nil
     }
 }

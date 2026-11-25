@@ -90,6 +90,7 @@ struct CustomersView: View {
             openRequestedCustomer()
         }
         .onChange(of: appContext.customerToOpen) { openRequestedCustomer() }
+        .onChange(of: model.filter.city) { model.filter.district = nil }
         .onChange(of: model.filter) { model.reload() }
         .task { await runDebugSceneIfNeeded() }
     }
@@ -129,6 +130,12 @@ struct CustomersView: View {
                 Text("Tüm şehirler").tag(String?.none)
                 ForEach(model.cityOptions(regionCities: settings.responsibleCities), id: \.self) { city in
                     Text(city).tag(String?.some(city))
+                }
+            }
+            Picker("İlçe", selection: $model.filter.district) {
+                Text("Tüm ilçeler").tag(String?.none)
+                ForEach(model.districtOptions(), id: \.self) { district in
+                    Text(district).tag(String?.some(district))
                 }
             }
             Picker("Durum", selection: $model.filter.status) {
@@ -195,7 +202,8 @@ struct CustomersView: View {
         switch scene {
         case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview,
              .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
-             .quotes, .quoteDetail, .quoteForm:
+             .quotes, .quoteDetail, .quoteForm,
+             .region, .regionCity, .regionDistrict:
             break
         case .detail, .visitHistory:
             if let showcase { path.append(showcase) }

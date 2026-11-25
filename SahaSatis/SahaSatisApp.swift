@@ -21,8 +21,13 @@ struct SahaSatisApp: App {
                 if let scene = DebugLaunch.scene, [.today, .todayForm, .export, .exportPreview].contains(scene) {
                     try SampleData.loadTodayShowcase(into: repositories)
                 }
+                if let scene = DebugLaunch.scene, [.region, .regionCity, .regionDistrict].contains(scene) {
+                    try SampleData.loadRegionShowcase(into: repositories)
+                }
             }
             #endif
+            // Mevcut kayıtlardaki ilçe yazımları şehrin resmi listesiyle eşleştirilir (eşleşmeyenler olduğu gibi kalır).
+            try? DistrictMigration.run(customers: repositories.customers)
             self.container = container
             let notificationScheduler: NotificationScheduling = DebugLaunch.skipNotifications
                 ? NullNotificationScheduler()

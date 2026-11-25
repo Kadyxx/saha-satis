@@ -254,5 +254,71 @@ enum SampleData {
             )
         }
     }
+
+    /// Bölge ekranı görüntüleri için: Bursa'da ilçelere, OSB'lere ve OSB'siz müşterilere yayılmış ek hayali müşteriler
+    /// (bekleyen teklif, gecikmiş takip, ziyaret sıklığı aşımı, migrasyon fırsatı). `load(into:)` sonrası kullanılır;
+    /// yalnızca `-DebugScene region|regionCity|regionDistrict` ile yüklenir (diğer görüntüler/testler değişmez).
+    @MainActor
+    static func loadRegionShowcase(into repositories: Repositories, now: Date = Date()) throws {
+        func daysAgo(_ days: Double) -> Date { now.addingTimeInterval(-days * 86_400) }
+
+        func add(
+            _ name: String, city: String, district: String, zone: String = "", sector: String,
+            status: CustomerStatus, rating: CustomerRating, lastVisitDaysAgo: Double? = nil, createdDaysAgo: Double = 10
+        ) throws -> Customer {
+            let customer = Customer(
+                name: name, city: city, district: district, industrialZone: zone, sector: sector,
+                status: status, rating: rating
+            )
+            customer.createdAt = daysAgo(createdDaysAgo)
+            try repositories.customers.add(customer)
+            if let lastVisitDaysAgo {
+                try repositories.visits.add(Visit(date: daysAgo(lastVisitDaysAgo)), customer: customer, contacts: [], opportunity: nil)
+            }
+            return customer
+        }
+        func pendingQuote(_ number: String, _ customer: Customer) throws {
+            let quote = Quote(
+                quoteNumber: number, date: daysAgo(6), validUntil: daysAgo(-24), currency: .tl, status: .sent
+            )
+            quote.sentAt = daysAgo(6)
+            try repositories.quotes.add(quote, customer: customer, opportunity: nil)
+        }
+        func overdueTask(_ title: String, _ customer: Customer, daysLate: Double) throws {
+            try repositories.tasks.add(
+                FollowUpTask(title: title, dueDate: daysAgo(daysLate), source: .manual),
+                customer: customer, quote: nil, visit: nil
+            )
+        }
+
+        // Bursa / Nilüfer (OSB'li ve OSB'siz) — "Örnek Makina A.Ş." (Bursa OSB) zaten örnek veride var
+        let kablo = try add("Ege Kablo San. A.Ş.", city: "Bursa", district: "Nilüfer", zone: "Bursa OSB", sector: "Kablo",
+                            status: .current, rating: .promising, lastVisitDaysAgo: 70)
+        try pendingQuote("T-2026-021", kablo)
+        try overdueTask("Fiyat listesini gönder", kablo, daysLate: 2)
+        _ = try add("Nilüfer Boya Fabrikası Ltd. Şti.", city: "Bursa", district: "Nilüfer", sector: "Kimya",
+                    status: .potential, rating: .weak, createdDaysAgo: 130)
+        _ = try add("Görükle Elektrik Pano San.", city: "Bursa", district: "Nilüfer", sector: "Elektrik pano",
+                    status: .potential, rating: .promising, lastVisitDaysAgo: 8)
+
+        // Bursa / Osmangazi, Kestel, İnegöl
+        let hidrolik = try add("Uludağ Hidrolik San. Tic. A.Ş.", city: "Bursa", district: "Osmangazi", zone: "Demirtaş OSB",
+                               sector: "Hidrolik", status: .current, rating: .important, lastVisitDaysAgo: 5)
+        try repositories.installedProducts.add(
+            InstalledProduct(catalogNumber: "SLC 5/04", productFamily: "SLC 500", lifecycleStatus: .endOfLife), to: hidrolik
+        )
+        try overdueTask("Bakım sözleşmesi görüşmesi", hidrolik, daysLate: 4)
+        _ = try add("Kestel Döküm A.Ş.", city: "Bursa", district: "Kestel", sector: "Döküm",
+                    status: .potential, rating: .promising, lastVisitDaysAgo: 20)
+        let mobilya = try add("İnegöl Mobilya Makineleri Ltd. Şti.", city: "Bursa", district: "İnegöl", zone: "İnegöl OSB",
+                              sector: "Ahşap makineleri", status: .current, rating: .weak, lastVisitDaysAgo: 40)
+        try pendingQuote("T-2026-022", mobilya)
+
+        // Diğer şehirlerden birkaç müşteri (şehir listesi sayıları için)
+        _ = try add("Edremit Zeytinyağı Gıda A.Ş.", city: "Balıkesir", district: "Edremit", sector: "Gıda",
+                    status: .potential, rating: .promising, lastVisitDaysAgo: 15)
+        _ = try add("Tepebaşı Elektronik San.", city: "Eskişehir", district: "Tepebaşı", zone: "Eskişehir OSB", sector: "Elektronik",
+                    status: .current, rating: .important, lastVisitDaysAgo: 25)
+    }
 }
 #endif

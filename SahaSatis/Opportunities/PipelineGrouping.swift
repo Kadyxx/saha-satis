@@ -125,3 +125,46 @@ extension AmountParser {
         return hasComma ? "\(result),\(decimals)" : result
     }
 }
+
+extension AmountParser {
+    /// İmleç korumalı biçimlendirme: `formatTyping` ile aynı metni üretir, imleci de aynı "anlamlı karakter"in (rakam ve
+    /// ilk virgül) hemen sağında tutar; böylece ortadan yazarken/silerken imleç sona atlamaz. Binlik noktaları imleç
+    /// sayımına girmez (nokta eklenince/kalkınca imleç kaymaz).
+    /// - Parameters:
+    ///   - cursor: Düzenlemeden SONRAKİ ham metinde imlecin karakter konumu (0...text.count).
+    /// - Returns: Biçimlenmiş metin ve yeni imleç konumu (karakter).
+    static func formatTyping(
+        _ text: String,
+        cursor: Int,
+        previous: String,
+        maxDecimals: Int = 2
+    ) -> (text: String, cursor: Int) {
+        let formatted = formatTyping(text, previous: previous, maxDecimals: maxDecimals)
+
+        let chars = Array(text)
+        let end = min(max(cursor, 0), chars.count)
+        let valid = text.filter { $0.isASCII && ($0.isNumber || $0 == "." || $0 == ",") }
+        let typedDot = valid.hasSuffix(".") && valid.count > previous.count && !valid.contains(",")
+        var significant = 0
+        var seenComma = false
+        for (index, character) in chars[..<end].enumerated() {
+            if character.isASCII && character.isNumber {
+                significant += 1
+            } else if character == "," && !seenComma {
+                seenComma = true
+                significant += 1
+            } else if character == ".", typedDot, !seenComma, index == chars.count - 1 {
+                seenComma = true
+                significant += 1
+            }
+        }
+
+        guard significant > 0 else { return (formatted, 0) }
+        var seen = 0
+        for (index, character) in formatted.enumerated() {
+            if character != "." { seen += 1 }
+            if seen == significant { return (formatted, index + 1) }
+        }
+        return (formatted, formatted.count)
+    }
+}

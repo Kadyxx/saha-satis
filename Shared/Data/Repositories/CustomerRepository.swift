@@ -4,6 +4,8 @@ import SwiftData
 struct CustomerFilter: Equatable, Sendable {
     var searchText: String = ""
     var city: String?
+    /// İlçe (resmi yazımla veya yazıldığı gibi; büyük/küçük harf ve Türkçe karakter duyarsız karşılaştırılır).
+    var district: String?
     var status: CustomerStatus?
     var rating: CustomerRating?
     var sort: CustomerSort = .name
@@ -54,6 +56,10 @@ final class SwiftDataCustomerRepository: CustomerRepository {
         }
         if let city = filter.city {
             result = result.filter { $0.city == city }
+        }
+        if let district = filter.district {
+            let key = DistrictCatalog.normalize(district)
+            result = result.filter { DistrictCatalog.normalize(DistrictCatalog.displayName($0.district, city: $0.city)) == key }
         }
         if let status = filter.status {
             result = result.filter { $0.status == status }

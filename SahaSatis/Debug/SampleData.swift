@@ -31,7 +31,7 @@ enum SampleData {
         try repositories.installedProducts.add(InstalledProduct(catalogNumber: "PLC-5/40", productFamily: "PLC-5", lifecycleStatus: .discontinued), to: ornek)
         try repositories.visits.add(Visit(date: daysAgo(12), summary: "Hat 3 yenileme görüşmesi"), customer: ornek, contacts: [], opportunity: nil)
 
-        // 2) Potansiyelli, potansiyel müşteri
+        // 2) Potansiyelli, aday müşteri
         let gida = Customer(
             name: "Marmara Gıda San. Tic. Ltd. Şti.", city: "Balıkesir", district: "Bandırma",
             sector: "Gıda", status: .potential, rating: .promising,
@@ -50,7 +50,7 @@ enum SampleData {
         try repositories.customers.add(tekstil)
         try repositories.visits.add(Visit(date: daysAgo(100)), customer: tekstil, contacts: [], opportunity: nil)
 
-        // 4) Önemli, potansiyel, hiç ziyaret edilmemiş
+        // 4) Önemli, aday, hiç ziyaret edilmemiş
         let seramik = Customer(
             name: "Anadolu Seramik San. A.Ş.", city: "Kütahya", district: "Merkez",
             sector: "Seramik", status: .potential, rating: .important,

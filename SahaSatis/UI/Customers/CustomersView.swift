@@ -8,7 +8,7 @@ private struct CustomerEditTarget: Identifiable {
 /// Müşteriler sekmesi: arama, filtreler, sıralama, ekleme ve detaya gitme.
 struct CustomersView: View {
     let repositories: Repositories
-    let settings: AppSettings
+    @ObservedObject var settings: AppSettings
     let debugScene: DebugScene?
 
     @State private var model: CustomerListModel
@@ -18,7 +18,7 @@ struct CustomersView: View {
 
     init(repositories: Repositories, settings: AppSettings, debugScene: DebugScene? = nil) {
         self.repositories = repositories
-        self.settings = settings
+        _settings = ObservedObject(wrappedValue: settings)
         self.debugScene = debugScene
         _model = State(initialValue: CustomerListModel(repository: repositories.customers))
     }
@@ -160,7 +160,7 @@ struct CustomersView: View {
         model.reload()
         let showcase = model.customers.first { $0.name == "Örnek Makina A.Ş." } ?? model.customers.first
         switch scene {
-        case .customers:
+        case .customers, .settings, .settingsReminders, .settingsCities:
             break
         case .detail:
             if let showcase { path.append(showcase) }

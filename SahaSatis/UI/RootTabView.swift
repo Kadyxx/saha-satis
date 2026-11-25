@@ -12,11 +12,19 @@ struct RootTabView: View {
 
     @State private var selection: AppTab
 
-    init(repositories: Repositories, settings: AppSettings = AppSettings(), debugScene: DebugScene? = nil) {
+    init(repositories: Repositories, settings: AppSettings, debugScene: DebugScene? = nil) {
         self.repositories = repositories
         self.settings = settings
         self.debugScene = debugScene
-        _selection = State(initialValue: debugScene == nil ? .today : .customers)
+        _selection = State(initialValue: Self.initialTab(for: debugScene))
+    }
+
+    private static func initialTab(for scene: DebugScene?) -> AppTab {
+        switch scene {
+        case nil: return .today
+        case .settings, .settingsReminders, .settingsCities: return .settings
+        case .customers, .detail, .form: return .customers
+        }
     }
 
     var body: some View {
@@ -49,15 +57,14 @@ struct RootTabView: View {
             .tabItem { Label("Harita", systemImage: "map") }
             .tag(AppTab.map)
 
-            PlaceholderView(
-                title: "Ayarlar",
-                systemImage: "gearshape",
-                message: "Bölge şehirleri, hatırlatma süreleri ve CRM e-postası burada ayarlanacak."
-            )
-            .tabItem { Label("Ayarlar", systemImage: "gearshape") }
-            .tag(AppTab.settings)
+            SettingsView(settings: settings, debugScene: debugScene)
+                .tabItem { Label("Ayarlar", systemImage: "gearshape") }
+                .tag(AppTab.settings)
         }
         // Küçük metin/düğme renkleri açık zeminde okunur olsun diye brandText (brand değil).
         .tint(Theme.brandText)
+        // Arayüz dili Türkçe: sistemin otomatik büyük harf dönüşümü (bölüm başlıkları vb.) tr_TR ile yapılsın
+        // ("Kişiler" → "KİŞİLER").
+        .environment(\.locale, AppFormat.locale)
     }
 }

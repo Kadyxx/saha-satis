@@ -5,9 +5,10 @@ import SwiftUI
 struct SahaSatisApp: App {
     private let container: ModelContainer
     private let repositories: Repositories
-    private let settings = AppSettings()
+    private let settings = DebugLaunch.makeSettings()
 
     init() {
+        AppAppearance.configure()
         do {
             // DEBUG + `-DebugSampleData` başlatma argümanı: bellek içi depo ve hayali örnek veri
             // (ekran görüntüleri için). Release derlemesinde `useSampleData` her zaman false'tur.

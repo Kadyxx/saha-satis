@@ -12,7 +12,7 @@ enum CustomerStatus: String, Codable, CaseIterable, Sendable {
     var title: String {
         switch self {
         case .current: return "Mevcut"
-        case .potential: return "Potansiyel"
+        case .potential: return "Aday"
         case .passive: return "Pasif"
         }
     }
@@ -72,7 +72,7 @@ enum OpportunityStage: String, Codable, CaseIterable, Sendable {
 
     var title: String {
         switch self {
-        case .lead: return "Aday"
+        case .lead: return "Yeni"
         case .qualified: return "Nitelikli"
         case .quoted: return "Teklif verildi"
         case .negotiation: return "Pazarlık"

@@ -84,4 +84,35 @@ Giriş (Sign in with Apple), iCloud senkronu, ekranlar ve hatırlatma motoru **y
   `screen-{customers,detail,form}-{light,dark}.png`, `app*.png`, `widget-*.png`). Görüntüler elle incelendi:
   renkler, rozetler, kişi düğmeleri ve Türkçe karakterler doğru. Not: simülatörün yereli İngilizce olduğu için
   "Son ziyaret" tarihi `Nov 21, 2026` biçiminde görünüyor; Türkçe cihazda yerel biçimle gösterilir.
-- Bu noktada duruldu; sıradaki iş için yeni talimat bekleniyor.
+
+## Düzeltmeler ve Ayarlar ekranı — kararlar
+
+1. **Türkçe büyük harf:** Bölüm başlıklarını sistem otomatik büyük harfe çevirir ve bunu ortam yerel ayarıyla yapar;
+   `RootTabView` kökünde `.environment(\.locale, tr_TR)` verildi ("KİŞİLER", "DEĞERLENDİRME"). Ek olarak Info.plist'e
+   `CFBundleDevelopmentRegion: tr` ve `CFBundleLocalizations: [tr]` eklendi: sistemin kendi metinleri (Düzenle,
+   İptal, Ara…) cihaz dili İngilizce olsa da Türkçe gelir. Tarihler yerel ayara güvenmez: `AppFormat.date` her zaman
+   `tr_TR` ("21 Kas 2026").
+2. **"Aday":** `CustomerStatus.potential` görünen metni "Aday" (Mevcut / Aday / Pasif); ham değer `potential` aynı,
+   veri göçü gerekmez. SPEC güncellendi. Karışmasın diye `OpportunityStage.lead` metni "Aday"dan "Yeni"ye alındı
+   (fırsat aşaması; ham değer `lead`). Değerlendirme rozetleri (Önemli / Potansiyelli / Zayıf) aynen kaldı.
+3. **Etiketli form alanları:** `FormTextField` (LabeledContent: etiket solda, değer sağda) ve `FormMultilineField`
+   (üstte küçük etiket). Müşteri ve kişi formlarında kullanılır.
+4. **Ekran görüntüleri tr_TR:** CI uygulamayı `-AppleLanguages "(tr)" -AppleLocale tr_TR` ile başlatır.
+5. **Gezinme başlıkları:** `AppAppearance` ile `UINavigationBarAppearance`; büyük ve satır içi başlıklar `textPrimary`
+   (`UIColor(named:)` açık/koyu varyantı izler).
+6. **Ayarlar:** `Shared/AppSettings.swift` (widget de derleyebilsin diye Shared'a taşındı; widget Info.plist'ine de
+   `AppGroupID` eklendi). `ObservableObject` + `@Published`; her değişiklik App Group UserDefaults'a anında yazılır.
+   Bölümler: Profil (ad soyad, unvan; yerel), Bölge (şehir ekle/sil/sırala — `EditButton`), Hatırlatmalar (varsayılan
+   saat 09:00, sabah özeti aç/kapa + 08:00, gün sonu aç/kapa + 18:00, hafta sonu bildirimleri), Ziyaret sıklığı
+   (Önemli 30 / Potansiyelli 60 / Zayıf 120 gün; adım 5, aralık 5–365), Teklifler (takip günleri "3, 7" virgüllü metin;
+   geçerlilik uyarısı aç/kapa + 3 gün), Dışa aktarma (CRM e-postası), Hakkında (sürüm).
+   - **Hafta sonu bildirimleri varsayılan KAPALI** (SPEC varsayılan vermiyor; sabah özeti "iş günü" ve görevler iş
+     gününe kayıyor). Ayarlardan açılır.
+   - **Boş şehir listesi bilinçli bir seçimdir** ve boş saklanır; yalnızca hiç ayarlanmamışsa 8 varsayılan şehir gelir
+     (son şehri silince 8 şehrin geri gelmesi şaşırtıcı olurdu).
+   - Gün sonu hatırlatmasına SPEC'teki "aç/kapa" için anahtar eklendi (istenen yalnızca saatti).
+   - Bu ayarlar henüz hiçbir yerde **uygulanmıyor** (hatırlatma motoru yok); yalnızca saklanıyor. Müşteri formu ve filtre
+     menüsü şehirleri ayarlardan okur.
+7. **Ayarlar ekran görüntüleri:** `settings` (üst), `settingsReminders` (hatırlatmalar bölümüne kaydırılmış),
+   `settingsCities` (şehirler alt ekranı), açık/koyu. Örnek veri modunda ayarlar geçici bir UserDefaults kümesinde
+   tutulur (gerçek App Group ayarlarına dokunulmaz) ve hayali profil doldurulur.

@@ -82,7 +82,7 @@ Sekiz SwiftData modeli var; merkezde `Customer` durur, diğerleri ona bağlanır
 
 | Model | Alanlar | İlişkiler |
 | --- | --- | --- |
-| `Customer` (Müşteri) | name, city (kullanıcının bölge listesinden; sabit kodlanmaz), district, industrialZone (OSB), sector, address, latitude, longitude, status (`current` / `potential` / `passive`), rating (`important` / `promising` / `weak` → Önemli / Potansiyelli / Zayıf), ratingNote (kısa değerlendirme metni), notes, lastVisitDate (hesaplanan) | contacts, visits, opportunities, quotes, installedBase, tasks |
+| `Customer` (Müşteri) | name, city (kullanıcının bölge listesinden; sabit kodlanmaz), district, industrialZone (OSB), sector, address, latitude, longitude, status (`current` / `potential` / `passive` → Mevcut / Aday / Pasif), rating (`important` / `promising` / `weak` → Önemli / Potansiyelli / Zayıf), ratingNote (kısa değerlendirme metni), notes, lastVisitDate (hesaplanan) | contacts, visits, opportunities, quotes, installedBase, tasks |
 | `Contact` (Kişi) | fullName, title, phone, email, notes, isPrimary | customer |
 | `InstalledProduct` (Kurulu baz) | catalogNumber (ör. 1756-L71), productFamily, quantity, lifecycleStatus (`active` / `activeMature` / `endOfLife` / `discontinued`), notes | customer |
 | `Visit` (Ziyaret) | date, type (`visit` / `phone` / `online`), transcript (ham ses metni), summary (düzenlenmiş not), topics, nextStep, nextStepDate, exportedToCRM (Bool), exportedAt | customer, contacts, opportunity? |
@@ -150,7 +150,7 @@ Takip tarihi: 28.11.2026
 **6. Harita ve bölge**
 
 - MapKit haritası; pin rengi duruma, pin boyutu değerlendirmeye göre
-- Üstte şehir seçici (kullanıcının bölgesindeki şehirler) ve filtreler: teklif bekleyen, uzun süredir ziyaret edilmeyen, potansiyel
+- Üstte şehir seçici (kullanıcının bölgesindeki şehirler) ve filtreler: teklif bekleyen, uzun süredir ziyaret edilmeyen, aday
 - Pin → müşteri kartı → Apple Haritalar'da yol tarifi
 - Haftalık plan: günlere şehir ata (ör. Salı Bursa); o günün şehri için önerilen ziyaret listesi (gecikmiş takipler + ziyaret sıklığı aşılanlar + Potansiyelli müşteriler)
 

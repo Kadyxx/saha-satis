@@ -28,7 +28,7 @@ struct CustomerRow: View {
                 Text(customer.status.title)
                 if let last = customer.lastVisitDate {
                     Text("·")
-                    Text("Son ziyaret: \(last.formatted(.dateTime.day().month().year()))")
+                    Text("Son ziyaret: \(AppFormat.date(last))")
                 }
             }
             .font(.caption)

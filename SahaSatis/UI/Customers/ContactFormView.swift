@@ -37,25 +37,20 @@ struct ContactFormView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Ad soyad", text: $fullName)
-                    TextField("Unvan", text: $title)
+                    FormTextField(title: "Ad soyad", text: $fullName)
+                    FormTextField(title: "Unvan", text: $title)
                 }
                 .listRowBackground(Theme.surface)
 
                 Section {
-                    TextField("Telefon", text: $phone)
-                        .keyboardType(.phonePad)
-                    TextField("E-posta", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
+                    FormTextField(title: "Telefon", text: $phone, keyboard: .phonePad)
+                    FormTextField(title: "E-posta", text: $email, keyboard: .emailAddress, autocapitalization: .never)
                 }
                 .listRowBackground(Theme.surface)
 
                 Section {
                     Toggle("Asıl kişi", isOn: $isPrimary)
-                    TextField("Notlar", text: $notes, axis: .vertical)
-                        .lineLimit(2...5)
+                    FormMultilineField(title: "Notlar", text: $notes, lines: 2...5)
                 }
                 .listRowBackground(Theme.surface)
             }

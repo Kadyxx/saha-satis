@@ -8,6 +8,9 @@ enum DebugScene: String {
     case customers
     case detail
     case form
+    case settings
+    case settingsReminders
+    case settingsCities
 }
 
 enum DebugLaunch {
@@ -27,4 +30,22 @@ enum DebugLaunch {
     static var useSampleData: Bool { false }
     static var scene: DebugScene? { nil }
     #endif
+
+    /// Ayarlar nesnesi. Örnek veri modunda gerçek App Group ayarlarına dokunmayan geçici bir
+    /// UserDefaults kümesi ve hayali profil kullanılır.
+    static func makeSettings() -> AppSettings {
+        #if DEBUG
+        if useSampleData {
+            let suiteName = "debug-sample-settings"
+            let defaults = UserDefaults(suiteName: suiteName) ?? .standard
+            defaults.removePersistentDomain(forName: suiteName)
+            let settings = AppSettings(defaults: defaults)
+            settings.fullName = "Örnek Satış Mühendisi"
+            settings.jobTitle = "Saha Satış Mühendisi"
+            settings.crmEmail = "crm@example.com"
+            return settings
+        }
+        #endif
+        return AppSettings()
+    }
 }

@@ -76,8 +76,8 @@ struct CustomerFormView: View {
         NavigationStack {
             Form {
                 Section("Firma") {
-                    TextField("Firma adı", text: $draft.name)
-                    TextField("Sektör", text: $draft.sector)
+                    FormTextField(title: "Firma adı", text: $draft.name)
+                    FormTextField(title: "Sektör", text: $draft.sector)
                 }
                 .listRowBackground(Theme.surface)
 
@@ -88,10 +88,9 @@ struct CustomerFormView: View {
                             Text(city).tag(city)
                         }
                     }
-                    TextField("İlçe", text: $draft.district)
-                    TextField("OSB", text: $draft.industrialZone)
-                    TextField("Adres", text: $draft.address, axis: .vertical)
-                        .lineLimit(2...4)
+                    FormTextField(title: "İlçe", text: $draft.district)
+                    FormTextField(title: "OSB", text: $draft.industrialZone)
+                    FormMultilineField(title: "Adres", text: $draft.address, lines: 2...4)
                 }
                 .listRowBackground(Theme.surface)
 
@@ -111,14 +110,12 @@ struct CustomerFormView: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    TextField("Kısa değerlendirme notu", text: $draft.ratingNote, axis: .vertical)
-                        .lineLimit(1...3)
+                    FormMultilineField(title: "Kısa değerlendirme notu", text: $draft.ratingNote, lines: 1...3)
                 }
                 .listRowBackground(Theme.surface)
 
                 Section("Notlar") {
-                    TextField("Notlar", text: $draft.notes, axis: .vertical)
-                        .lineLimit(3...8)
+                    FormMultilineField(title: "Notlar", text: $draft.notes, lines: 3...8)
                 }
                 .listRowBackground(Theme.surface)
             }

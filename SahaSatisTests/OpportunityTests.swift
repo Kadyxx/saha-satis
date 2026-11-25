@@ -587,7 +587,7 @@ final class OpportunityServiceTests: XCTestCase {
         XCTAssertTrue(model.isEditing)
         XCTAssertEqual(model.customer?.id, customer.id)
         XCTAssertEqual(model.currency, .eur, "Düzenlemede kayıtlı para birimi, varsayılan değil")
-        XCTAssertEqual(model.amountText, "54000")
+        XCTAssertEqual(model.amountText, "54.000")
         XCTAssertEqual(model.stage, .lost)
         XCTAssertTrue(model.asksLostReason)
         XCTAssertEqual(model.lostReason, "Fiyat")

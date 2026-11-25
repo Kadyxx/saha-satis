@@ -16,6 +16,10 @@ final class Quote {
     /// Bu teklife özel takip günleri (gönderimden itibaren). Boşsa ayarlardaki varsayılan kullanılır.
     var followUpDays: [Int] = []
     var notes: String = ""
+    /// Kaybedildi iken kayıp sebebi (diğer durumlarda boş).
+    var lostReason: String = ""
+    /// Durum "Gönderildi/Takipte"ye geçtiği an; takip günleri bu günden sayılır. Taslağa dönünce temizlenir.
+    var sentAt: Date?
 
     var customer: Customer?
     var opportunity: Opportunity?
@@ -54,9 +58,19 @@ final class Quote {
         set { statusRaw = newValue.rawValue }
     }
 
-    /// Hesaplanan: kalem toplamlarının toplamı.
+    /// Hesaplanan: kalem toplamlarının toplamı (kuruşa yuvarlı).
     var totalAmount: Double {
-        (items ?? []).reduce(0) { $0 + $1.lineTotal }
+        Money.rounded((items ?? []).reduce(0) { $0 + $1.lineTotal })
+    }
+
+    /// Hesaplanan: iskonto uygulanmadan önceki toplam (adet × birim fiyat).
+    var subtotalAmount: Double {
+        Money.rounded((items ?? []).reduce(0) { $0 + $1.grossTotal })
+    }
+
+    /// Kalemler form sırasına göre (`position`, eşitlikte eklenme sırası).
+    var sortedItems: [QuoteItem] {
+        (items ?? []).sorted { ($0.position, $0.createdAt) < ($1.position, $1.createdAt) }
     }
 
     /// Bu teklif için geçerli takip günleri: kendi listesi doluysa o, değilse verilen varsayılan.

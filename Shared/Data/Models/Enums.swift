@@ -111,6 +111,9 @@ enum QuoteStatus: String, Codable, CaseIterable, Sendable {
     }
 
     var isClosed: Bool { self == .won || self == .lost }
+
+    /// Müşteriden yanıt beklenen durumlar (Gönderildi, Takipte): takip ve geçerlilik hatırlatmaları yalnızca bunlarda vardır.
+    var isPending: Bool { self == .sent || self == .followUp }
 }
 
 enum LifecycleStatus: String, Codable, CaseIterable, Sendable {

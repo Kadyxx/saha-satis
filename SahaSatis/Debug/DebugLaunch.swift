@@ -22,6 +22,9 @@ enum DebugScene: String {
     case opportunityDetail
     case opportunityForm
     case opportunityLost
+    case quotes
+    case quoteDetail
+    case quoteForm
 }
 
 enum DebugLaunch {

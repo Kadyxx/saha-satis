@@ -33,14 +33,14 @@ enum SampleData {
             estimatedValue: 480_000, currency: .tl, stage: .quoted, expectedCloseDate: inDays(12)
         )
         try repositories.opportunities.add(hat3, customer: ornek)
-        try repositories.opportunities.add(
-            Opportunity(title: "Bakım sözleşmesi yenileme", estimatedValue: 120_000, currency: .tl, stage: .negotiation, expectedCloseDate: inDays(20)),
-            customer: ornek
+        let bakim = Opportunity(
+            title: "Bakım sözleşmesi yenileme", estimatedValue: 120_000, currency: .tl, stage: .negotiation, expectedCloseDate: inDays(20)
         )
-        try repositories.opportunities.add(
-            Opportunity(title: "Yedek parça paketi", estimatedValue: 36_000, currency: .tl, stage: .won, expectedCloseDate: inDays(-9)),
-            customer: ornek
+        try repositories.opportunities.add(bakim, customer: ornek)
+        let yedekParca = Opportunity(
+            title: "Yedek parça paketi", estimatedValue: 36_000, currency: .tl, stage: .won, expectedCloseDate: inDays(-9)
         )
+        try repositories.opportunities.add(yedekParca, customer: ornek)
 
         // Ziyaret geçmişi (VisitService: sonraki adım tarihi olan ziyaret bağlı takip görevi üretir)
         let visitService = VisitService(repositories: repositories, reminderMinutes: 9 * 60)
@@ -132,6 +132,59 @@ enum SampleData {
         )
         try repositories.contacts.add(Contact(fullName: "Elif Şahin", title: "Proje Mühendisi", phone: "0555 000 00 04", email: "elif@example.com"), to: otomotiv)
         try repositories.visits.add(Visit(date: daysAgo(3)), customer: otomotiv, contacts: [], opportunity: nil)
+
+        // Teklifler (hayali). T-2026-014 `PipelineView`'daki ekran görüntüsü senaryosuyla eşleşmeli.
+        func addQuote(
+            _ number: String, _ customer: Customer, opportunity: Opportunity? = nil, status: QuoteStatus,
+            currency: Currency = .tl, dateOffset: Double, validOffset: Double?, sentOffset: Double? = nil,
+            notes: String = "", lostReason: String = "", items: [(String, String, Int, Double, Double)]
+        ) throws {
+            let quote = Quote(
+                quoteNumber: number, date: inDays(dateOffset), validUntil: validOffset.map { inDays($0) },
+                currency: currency, status: status, notes: notes
+            )
+            quote.sentAt = sentOffset.map { inDays($0) }
+            quote.lostReason = lostReason
+            try repositories.quotes.add(quote, customer: customer, opportunity: opportunity)
+            for (index, row) in items.enumerated() {
+                let item = QuoteItem(catalogNumber: row.0, itemDescription: row.1, quantity: row.2, unitPrice: row.3, discountPercent: row.4)
+                item.position = index
+                try repositories.quoteItems.add(item, to: quote)
+            }
+        }
+        try addQuote(
+            "T-2026-014", ornek, opportunity: hat3, status: .sent, dateOffset: -2, validOffset: 2, sentOffset: -2,
+            notes: "Teslim süresi 6 hafta; ödeme %50 peşin, kalan teslimde.",
+            items: [
+                ("1756-L71", "ControlLogix 5571 işlemci", 2, 142_500, 5),
+                ("1756-IB16", "16 kanal dijital giriş modülü", 4, 18_750, 0),
+                ("1756-OB16E", "16 kanal dijital çıkış modülü", 4, 21_200, 10)
+            ]
+        )
+        try addQuote(
+            "T-2026-012", ornek, opportunity: bakim, status: .followUp, dateOffset: -10, validOffset: 20, sentOffset: -9,
+            items: [("BAKIM-YIL", "Yıllık bakım sözleşmesi (12 ay)", 1, 120_000, 0)]
+        )
+        try addQuote(
+            "T-2026-015", gida, status: .draft, currency: .usd, dateOffset: 0, validOffset: 30,
+            items: [
+                ("2080-LC50-48QWB", "Micro850 kompakt denetleyici", 3, 1_450, 0),
+                ("2711R-T7T", "PanelView 800 7\" HMI", 2, 1_980, 5)
+            ]
+        )
+        try addQuote(
+            "T-2026-009", ornek, opportunity: yedekParca, status: .won, dateOffset: -40, validOffset: -10, sentOffset: -39,
+            items: [("YEDEK-PKT", "Yedek parça paketi", 1, 36_000, 0)]
+        )
+        try addQuote(
+            "T-2026-007", tekstil, status: .lost, dateOffset: -45, validOffset: -15, sentOffset: -44,
+            lostReason: "Rakip fiyatı daha düşük kaldı",
+            items: [("1769-L33ER", "CompactLogix 5370 işlemci", 1, 54_000, 0)]
+        )
+        try addQuote(
+            "T-2026-011", otomotiv, status: .sent, currency: .eur, dateOffset: -12, validOffset: -1, sentOffset: -12,
+            items: [("1756-L83E", "ControlLogix 5580 işlemci", 1, 9_800, 0)]
+        )
     }
 
     /// Bugün ekranı görüntüleri için: gecikmiş / bugün / yarın takipleri ve bugünkü ziyaretler (hayali).

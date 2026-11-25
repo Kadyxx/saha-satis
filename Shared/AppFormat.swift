@@ -32,6 +32,17 @@ enum AppFormat {
         return formatter.string(from: date)
     }
 
+    /// "1.250,50 ₺" (her zaman iki kuruş hanesi; teklif tutarları için)
+    static func moneyExact(_ amount: Double, currency: Currency) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = locale
+        formatter.numberStyle = .decimal
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        let number = formatter.string(from: NSNumber(value: amount)) ?? String(format: "%.2f", amount)
+        return "\(number) \(currency.symbol)"
+    }
+
     /// "27 Kas Cum"
     static func shortDay(_ date: Date, timeZone: TimeZone = .current) -> String {
         let formatter = DateFormatter()

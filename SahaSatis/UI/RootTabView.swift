@@ -27,7 +27,8 @@ struct RootTabView: View {
         case .settings, .settingsReminders, .settingsCities: return .settings
         case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory: return .customers
         case .today, .todayForm, .export, .exportPreview: return .today
-        case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost: return .pipeline
+        case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
+             .quotes, .quoteDetail, .quoteForm: return .pipeline
         }
     }
 

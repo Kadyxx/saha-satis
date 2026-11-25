@@ -66,6 +66,9 @@ struct CustomersView: View {
             .navigationDestination(for: Opportunity.self) { opportunity in
                 OpportunityDetailView(opportunity: opportunity, context: appContext)
             }
+            .navigationDestination(for: Quote.self) { quote in
+                QuoteDetailView(quote: quote, context: appContext)
+            }
             .sheet(item: $debugVisit, onDismiss: { model.reload() }) { target in
                 VisitFormView(context: appContext, customer: target.customer, visit: nil, seed: target.seed)
             }
@@ -191,7 +194,8 @@ struct CustomersView: View {
         let showcase = model.customers.first { $0.name == "Örnek Makina A.Ş." } ?? model.customers.first
         switch scene {
         case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview,
-             .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost:
+             .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
+             .quotes, .quoteDetail, .quoteForm:
             break
         case .detail, .visitHistory:
             if let showcase { path.append(showcase) }

@@ -75,7 +75,7 @@ jobs:
           xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
 
           # Müşteri ekranları: yalnızca DEBUG derlemesinde, bellek içi hayali örnek veriyle.
-          for scene in customers detail form settings settingsReminders settingsCities visitForm visitRecording visitHistory today todayForm export exportPreview opportunities opportunityDetail opportunityForm opportunityLost; do
+          for scene in customers detail form settings settingsReminders settingsCities visitForm visitRecording visitHistory today todayForm export exportPreview opportunities opportunityDetail opportunityForm opportunityLost quotes quoteDetail quoteForm; do
             for mode in light dark; do
               xcrun simctl ui "$UDID" appearance "$mode"
               xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppleLanguages "(tr)" -AppleLocale tr_TR -DebugSampleData -DebugScene "$scene"

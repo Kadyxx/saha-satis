@@ -23,7 +23,7 @@ struct RootTabView: View {
         switch scene {
         case nil: return .today
         case .settings, .settingsReminders, .settingsCities: return .settings
-        case .customers, .detail, .form: return .customers
+        case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory: return .customers
         }
     }
 

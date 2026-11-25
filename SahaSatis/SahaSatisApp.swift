@@ -4,8 +4,7 @@ import SwiftUI
 @main
 struct SahaSatisApp: App {
     private let container: ModelContainer
-    private let repositories: Repositories
-    private let settings = DebugLaunch.makeSettings()
+    private let context: AppContext
 
     init() {
         AppAppearance.configure()
@@ -21,7 +20,11 @@ struct SahaSatisApp: App {
             }
             #endif
             self.container = container
-            self.repositories = repositories
+            self.context = AppContext(
+                repositories: repositories,
+                settings: DebugLaunch.makeSettings(),
+                makeSpeechEngine: DebugLaunch.speechEngineFactory()
+            )
         } catch {
             fatalError("Veri deposu açılamadı: \(error)")
         }
@@ -29,7 +32,12 @@ struct SahaSatisApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootTabView(repositories: repositories, settings: settings, debugScene: DebugLaunch.scene)
+            RootTabView(
+                repositories: context.repositories,
+                settings: context.settings,
+                debugScene: DebugLaunch.scene
+            )
+            .environmentObject(context)
         }
         .modelContainer(container)
     }

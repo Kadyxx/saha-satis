@@ -116,3 +116,44 @@ Giriş (Sign in with Apple), iCloud senkronu, ekranlar ve hatırlatma motoru **y
 7. **Ayarlar ekran görüntüleri:** `settings` (üst), `settingsReminders` (hatırlatmalar bölümüne kaydırılmış),
    `settingsCities` (şehirler alt ekranı), açık/koyu. Örnek veri modunda ayarlar geçici bir UserDefaults kümesinde
    tutulur (gerçek App Group ayarlarına dokunulmaz) ve hayali profil doldurulur.
+
+## Ziyaret kaydı — kararlar
+
+1. **"+ Ziyaret" düğmesi:** `visitButton(customer:onSaved:)` görünüm değiştiricisi (`safeAreaInset`, action rengi,
+   onAction yazı). Bugün/Fırsat/Harita yer tutucularına, Müşteriler listesine, Ayarlar ve Şehirler ekranlarına,
+   müşteri detayına eklendi. `safeAreaInset` olduğu için liste/ayar satırlarının sağındaki kontrolleri kapatmaz.
+   Detaydan açılırsa o müşteri seçili gelir. Bağımlılıklar `AppContext` (EnvironmentObject) ile taşınır.
+2. **Ziyaret formu** (`VisitFormView` + `VisitFormModel`): müşteri (seçici), görüşülen kişiler (işaretleme),
+   tip (segmentli: Yüz yüze / Telefon / Online), tarih+saat (varsayılan şimdi), sesli not, görüşme notu,
+   sonraki adım + isteğe bağlı takip tarihi. Müşteri yalnızca yeni kayıtta seçilebilir; düzenlemede sabit.
+   **Müşteri seçici:** en son ziyaret edilenler üstte + arama. SPEC "konuma en yakınlar üstte" diyor; konum izni ve
+   müşteri koordinatları henüz olmadığı için (Harita fazı) konum sıralaması yapılmadı.
+3. **Sesli not mimarisi:** `SpeechEngine` protokolü → `AppleSpeechEngine` (Speech, `tr-TR`, AVAudioEngine) ve
+   `MockSpeechEngine` (testler + DEBUG ekran görüntüleri). `VoiceNoteController` durum makinesi: idle / recording /
+   paused / permissionDenied / unavailable / failed. Duraklat = oturumu kapat + canlı metni nota ekle; Devam = yeni
+   oturum. Uzun kayıtlar (tanıyıcı ~1 dk'da oturumu bitirir): oturum kendiliğinden bitince metin nota eklenir ve yeni
+   oturum açılır (SPEC "uzun kayıtlar parçalanarak işlenir"); art arda 3 anlık bitişte döngüye girmemek için durur.
+   Canlı metin kayıt sırasında ayrı satırda gösterilir, duraklatma/bitirme/parça sonunda **görüşme notuna eklenir**;
+   not her zaman elle düzenlenebilir. Ham ses metni `Visit.transcript`'e (parçaların birleşimi, notu düzenlesen
+   değişmez), düzenlenmiş not `Visit.summary`'ye yazılır.
+4. **İzinler:** Info.plist'e Türkçe `NSMicrophoneUsageDescription` ve `NSSpeechRecognitionUsageDescription`.
+   İzin verilmezse/tanıyıcı yoksa uygulama bir mesaj ve "İzinleri Ayarlar'dan aç" düğmesi gösterir; not alanı her
+   zaman klavyeyle kullanılabilir. **Gerçek mikrofon/konuşma tanıma yalnızca gerçek iPhone'da denenebilir** (CI'da
+   mock); `AppleSpeechEngine` bu yüzden elle test edilmeli (özellikle izin akışı ve 1 dk üstü kayıt).
+5. **Takip görevi:** `VisitService` (iş kuralı katmanı). `nextStepDate` seçilirse `FollowUpTask`
+   (source `visitNextStep`, müşteri + ziyarete bağlı) oluşur; başlık = sonraki adım metni (boşsa "Sonraki adım");
+   vade = seçilen gün + Ayarlar'daki hatırlatma saati (varsayılan 09:00, form açılışındaki değer). Düzenlemede aynı
+   görev güncellenir (çoğalmaz); tarih kaldırılırsa açık görev silinir; tamamlanmış görev korunur ve yeniden
+   açılmaz. Ziyaret silinirse açık sonraki-adım görevi de silinir.
+6. **Yeni ziyaret girilince** müşterinin açık `visitFrequency` görevi kapanır (SPEC). Bu türden görev üreten
+   hatırlatma motoru henüz yok; kural hazır ve testli.
+7. **Son ziyaret tarihi** `Customer.lastVisitDate` hesaplanan özellik olduğu için kayıtla kendiliğinden güncel;
+   liste `onSaved` ile yenilenir.
+8. **Ziyaret geçmişi** (müşteri detayı): yeniden eskiye; satırda tarih-saat, tip, not özeti (3 satır), sonraki adım
+   ve kişiler. Satıra dokunmak düzenleme formunu açar (ayrı bir salt-okunur detay ekranı yapılmadı: tek ekran hem
+   detay hem düzenleme). Sola kaydırıp Sil: onay sorulur.
+9. **Kapsam dışı bırakılanlar:** ziyareti fırsata bağlama / yeni fırsat açma (SPEC adım 4), "Yapay zekâ ile düzenle"
+   (Faz 4), gün sonu e-posta dışa aktarma (`exportedToCRM` alanı `false` başlıyor, akış sonraki adım).
+10. **Ekran görüntüsü senaryoları (DEBUG):** `visitForm` (dolu form), `visitRecording` (sahte motor canlı metin
+    gönderir: "Dinleniyor…" + Duraklat/Bitir), `visitHistory` (detay, ziyaret geçmişine kaydırılmış). Örnek veride
+    Örnek Makina için 3 ziyaret (80/34/12 gün önce) ve 1 bağlı takip görevi var.

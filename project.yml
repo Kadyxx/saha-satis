@@ -48,6 +48,8 @@ targets:
         CFBundleDevelopmentRegion: tr
         CFBundleLocalizations:
           - tr
+        NSMicrophoneUsageDescription: Ziyaret notlarını sesle kaydedebilmeniz için mikrofona erişim gerekir. Ses yalnızca konuşmayı metne çevirmek için kullanılır.
+        NSSpeechRecognitionUsageDescription: Sesli ziyaret notunuzu Türkçe metne çevirmek için konuşma tanıma kullanılır.
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait

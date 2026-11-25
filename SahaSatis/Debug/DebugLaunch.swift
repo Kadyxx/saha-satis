@@ -11,6 +11,9 @@ enum DebugScene: String {
     case settings
     case settingsReminders
     case settingsCities
+    case visitForm
+    case visitRecording
+    case visitHistory
 }
 
 enum DebugLaunch {
@@ -30,6 +33,19 @@ enum DebugLaunch {
     static var useSampleData: Bool { false }
     static var scene: DebugScene? { nil }
     #endif
+
+    /// Konuşma tanıma motoru üreticisi. Örnek veri modunda (simülatörde mikrofon yok) canlı metin gösteren
+    /// sahte motor; aksi halde gerçek Apple Speech motoru.
+    static func speechEngineFactory() -> () -> SpeechEngine {
+        if useSampleData {
+            return {
+                MockSpeechEngine(autoEmit: [
+                    "Bugün Örnek Makina'da Ahmet Bey ile görüştük, hat üç için PLC yenileme teklifi istediler"
+                ])
+            }
+        }
+        return { AppleSpeechEngine() }
+    }
 
     /// Ayarlar nesnesi. Örnek veri modunda gerçek App Group ayarlarına dokunmayan geçici bir
     /// UserDefaults kümesi ve hayali profil kullanılır.

@@ -19,17 +19,39 @@ enum SampleData {
             notes: "Satın alma her ayın ilk haftası toplanıyor. Fabrikada çekim zayıf."
         )
         try repositories.customers.add(ornek)
-        try repositories.contacts.add(
-            Contact(fullName: "Ahmet Yılmaz", title: "Bakım Müdürü", phone: "0555 000 00 01", email: "ahmet@example.com"),
-            to: ornek
-        )
-        try repositories.contacts.add(
-            Contact(fullName: "Ayşe Demir", title: "Satın Alma", phone: "0555 000 00 02", email: "ayse@example.com"),
-            to: ornek
-        )
+        let ahmet = Contact(fullName: "Ahmet Yılmaz", title: "Bakım Müdürü", phone: "0555 000 00 01", email: "ahmet@example.com")
+        let ayse = Contact(fullName: "Ayşe Demir", title: "Satın Alma", phone: "0555 000 00 02", email: "ayse@example.com")
+        try repositories.contacts.add(ahmet, to: ornek)
+        try repositories.contacts.add(ayse, to: ornek)
         try repositories.installedProducts.add(InstalledProduct(catalogNumber: "1756-L71", productFamily: "ControlLogix", quantity: 2), to: ornek)
         try repositories.installedProducts.add(InstalledProduct(catalogNumber: "PLC-5/40", productFamily: "PLC-5", lifecycleStatus: .discontinued), to: ornek)
-        try repositories.visits.add(Visit(date: daysAgo(12), summary: "Hat 3 yenileme görüşmesi"), customer: ornek, contacts: [], opportunity: nil)
+
+        // Ziyaret geçmişi (VisitService: sonraki adım tarihi olan ziyaret bağlı takip görevi üretir)
+        let visitService = VisitService(repositories: repositories, reminderMinutes: 9 * 60)
+        try visitService.save(
+            VisitDraft(
+                date: daysAgo(80), type: .visit,
+                summary: "Yıllık bakım sözleşmesi tanıtıldı. Satın alma süreci ve onay adımları anlatıldı.",
+                nextStep: "Bakım sözleşmesi örneği gönderilecek"
+            ),
+            customer: ornek, contacts: [ayse], existing: nil
+        )
+        try visitService.save(
+            VisitDraft(
+                date: daysAgo(34), type: .phone,
+                summary: "Yedek parça stok durumu soruldu; fiyat listesi e-postayla gönderildi."
+            ),
+            customer: ornek, contacts: [ahmet], existing: nil
+        )
+        try visitService.save(
+            VisitDraft(
+                date: daysAgo(12), type: .visit,
+                summary: "Hat 3 PLC yenilemesi görüşüldü. Eski denetleyicilerin yedek parça sorunu var; teklif istediler.",
+                nextStep: "Hat 3 için teklif hazırlanacak",
+                nextStepDate: now.addingTimeInterval(3 * 86_400)
+            ),
+            customer: ornek, contacts: [ahmet, ayse], existing: nil
+        )
 
         // 2) Potansiyelli, aday müşteri
         let gida = Customer(

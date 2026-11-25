@@ -36,6 +36,7 @@ struct SettingsView: View {
                 }
                 .scrollContentBackground(.hidden)
                 .background(Theme.background)
+                .visitButton()
                 .task {
                     // Yalnızca ekran görüntüsü senaryosu: hatırlatmalar bölümüne kaydır.
                     guard debugScene == .settingsReminders else { return }

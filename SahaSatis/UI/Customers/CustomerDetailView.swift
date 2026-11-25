@@ -5,6 +5,11 @@ private struct ContactEditTarget: Identifiable {
     let contact: Contact?
 }
 
+private struct VisitEditTarget: Identifiable {
+    let id = UUID()
+    let visit: Visit
+}
+
 /// Müşteri detayı: üst kart (değerlendirme rozeti + not), Kişiler, Notlar ve henüz boş başlıklar
 /// (Ziyaret geçmişi, Fırsatlar, Kurulu baz).
 struct CustomerDetailView: View {
@@ -13,25 +18,39 @@ struct CustomerDetailView: View {
     let settings: AppSettings
     /// Silme onayından sonra çağrılır; silme işlemini liste ekranı güvenle yapar.
     let onDelete: (Customer) -> Void
+    /// Yalnızca ekran görüntüsü senaryosu: açılışta ziyaret geçmişine kaydırır.
+    var scrollToHistory = false
 
+    @EnvironmentObject private var appContext: AppContext
     @Environment(\.openURL) private var openURL
     @State private var contacts: [Contact] = []
+    @State private var visits: [Visit] = []
+    @State private var visitTarget: VisitEditTarget?
+    @State private var visitToDelete: Visit?
     @State private var showingEdit = false
     @State private var contactTarget: ContactEditTarget?
     @State private var confirmingDelete = false
     @State private var errorMessage: String?
 
     var body: some View {
-        List {
-            headerSection
-            contactsSection
-            notesSection
-            emptySection(title: "Ziyaret geçmişi", message: "Ziyaretler, teklifler ve notlar burada zaman çizelgesi olarak görünecek.")
-            emptySection(title: "Fırsatlar", message: "Bu müşterinin fırsatları burada listelenecek.")
-            installedBaseSection
+        ScrollViewReader { proxy in
+            List {
+                headerSection
+                contactsSection
+                notesSection
+                visitsSection
+                emptySection(title: "Fırsatlar", message: "Bu müşterinin fırsatları burada listelenecek.")
+                installedBaseSection
+            }
+            .task {
+                guard scrollToHistory else { return }
+                try? await Task.sleep(for: .milliseconds(600))
+                proxy.scrollTo(historyAnchor, anchor: .top)
+            }
         }
         .scrollContentBackground(.hidden)
         .background(Theme.background)
+        .visitButton(customer: customer, onSaved: reloadVisits)
         .navigationTitle(customer.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -44,7 +63,10 @@ struct CustomerDetailView: View {
                 }
             }
         }
-        .onAppear(perform: reloadContacts)
+        .onAppear {
+            reloadContacts()
+            reloadVisits()
+        }
         .sheet(isPresented: $showingEdit) {
             CustomerFormView(
                 customer: customer,
@@ -59,6 +81,20 @@ struct CustomerDetailView: View {
                 repository: repositories.contacts,
                 onSaved: reloadContacts
             )
+        }
+        .sheet(item: $visitTarget) { target in
+            VisitFormView(context: appContext, customer: customer, visit: target.visit, onSaved: reloadVisits)
+        }
+        .confirmationDialog(
+            "Bu ziyaret silinsin mi?",
+            isPresented: visitDeleteBinding,
+            titleVisibility: .visible
+        ) {
+            Button("Ziyareti sil", role: .destructive) {
+                if let visit = visitToDelete { delete(visit) }
+                visitToDelete = nil
+            }
+            Button("Vazgeç", role: .cancel) { visitToDelete = nil }
         }
         .confirmationDialog(
             "Bu müşteri ve tüm kişileri, ziyaretleri, fırsatları ve teklifleri silinsin mi?",
@@ -140,6 +176,33 @@ struct CustomerDetailView: View {
         .listRowBackground(Theme.surface)
     }
 
+    private let historyAnchor = "visit-history-anchor"
+
+    /// Ziyaret geçmişi: en yeni üstte; satıra dokunmak ziyareti açıp düzenlemeyi sağlar.
+    private var visitsSection: some View {
+        Section("Ziyaret geçmişi") {
+            if visits.isEmpty {
+                Text("Henüz ziyaret yok. Sağ alttaki + Ziyaret ile ilk kaydı ekleyin.")
+                    .font(.callout)
+                    .foregroundStyle(Theme.textSecondary)
+                    .id(historyAnchor)
+            } else {
+                ForEach(Array(visits.enumerated()), id: \.element.id) { index, visit in
+                    Button { visitTarget = VisitEditTarget(visit: visit) } label: {
+                        VisitHistoryRow(visit: visit)
+                    }
+                    .id(index == 0 ? historyAnchor : visit.id.uuidString)
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) { visitToDelete = visit } label: {
+                            Label("Sil", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        }
+        .listRowBackground(Theme.surface)
+    }
+
     private var notesSection: some View {
         Section("Notlar") {
             if customer.notes.isEmpty {
@@ -194,6 +257,31 @@ struct CustomerDetailView: View {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func reloadVisits() {
+        do {
+            visits = try repositories.visits.visits(for: customer)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func delete(_ visit: Visit) {
+        do {
+            let service = VisitService(
+                repositories: repositories,
+                reminderMinutes: settings.defaultReminderTime.minutesSinceMidnight
+            )
+            try service.delete(visit)
+            reloadVisits()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private var visitDeleteBinding: Binding<Bool> {
+        Binding(get: { visitToDelete != nil }, set: { if !$0 { visitToDelete = nil } })
     }
 
     private func delete(_ contact: Contact) {

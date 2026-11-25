@@ -5,15 +5,24 @@ private struct CustomerEditTarget: Identifiable {
     let customer: Customer?
 }
 
+/// Yalnızca ekran görüntüsü senaryoları: ziyaret formunu önceden doldurulmuş açar.
+private struct DebugVisitTarget: Identifiable {
+    let id = UUID()
+    let customer: Customer
+    let seed: VisitFormSeed
+}
+
 /// Müşteriler sekmesi: arama, filtreler, sıralama, ekleme ve detaya gitme.
 struct CustomersView: View {
     let repositories: Repositories
     @ObservedObject var settings: AppSettings
     let debugScene: DebugScene?
 
+    @EnvironmentObject private var appContext: AppContext
     @State private var model: CustomerListModel
     @State private var path = NavigationPath()
     @State private var editTarget: CustomerEditTarget?
+    @State private var debugVisit: DebugVisitTarget?
     @State private var didRunDebugScene = false
 
     init(repositories: Repositories, settings: AppSettings, debugScene: DebugScene? = nil) {
@@ -33,6 +42,7 @@ struct CustomersView: View {
                 }
             }
             .background(Theme.background)
+            .visitButton(onSaved: { model.reload() })
             .navigationTitle("Müşteriler")
             .searchable(text: $model.filter.searchText, prompt: "Firma, şehir, sektör ara")
             .toolbar {
@@ -49,8 +59,12 @@ struct CustomersView: View {
                     customer: customer,
                     repositories: repositories,
                     settings: settings,
-                    onDelete: delete
+                    onDelete: delete,
+                    scrollToHistory: debugScene == .visitHistory
                 )
+            }
+            .sheet(item: $debugVisit, onDismiss: { model.reload() }) { target in
+                VisitFormView(context: appContext, customer: target.customer, visit: nil, seed: target.seed)
             }
             .sheet(item: $editTarget, onDismiss: { model.reload() }) { target in
                 CustomerFormView(
@@ -162,10 +176,14 @@ struct CustomersView: View {
         switch scene {
         case .customers, .settings, .settingsReminders, .settingsCities:
             break
-        case .detail:
+        case .detail, .visitHistory:
             if let showcase { path.append(showcase) }
         case .form:
             if let showcase { editTarget = CustomerEditTarget(customer: showcase) }
+        case .visitForm:
+            if let showcase { debugVisit = DebugVisitTarget(customer: showcase, seed: .showcaseForm) }
+        case .visitRecording:
+            if let showcase { debugVisit = DebugVisitTarget(customer: showcase, seed: .showcaseRecording) }
         }
     }
 }

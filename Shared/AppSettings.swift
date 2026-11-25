@@ -61,6 +61,7 @@ final class AppSettings: ObservableObject {
     static let defaultEndOfDayTime = TimeOfDay(hour: 18)
     static let defaultQuoteFollowUpDays = [3, 7]
     static let defaultQuoteExpiryWarningDays = 3
+    static let defaultOpportunityCloseReminderDays = 7
 
     private enum Key {
         static let fullName = "profile.fullName"
@@ -78,6 +79,9 @@ final class AppSettings: ObservableObject {
         static let followUpDays = "reminders.quoteFollowUpDays"
         static let expiryEnabled = "reminders.quoteExpiry.enabled"
         static let expiryDays = "reminders.quoteExpiry.daysBefore"
+        static let oppCloseEnabled = "reminders.opportunityClose.enabled"
+        static let oppCloseDays = "reminders.opportunityClose.daysBefore"
+        static let currency = "general.defaultCurrency"
         static let crmEmail = "export.crmEmail"
     }
 
@@ -118,6 +122,15 @@ final class AppSettings: ObservableObject {
     @Published var quoteExpiryWarningEnabled: Bool { didSet { defaults.set(quoteExpiryWarningEnabled, forKey: Key.expiryEnabled) } }
     @Published var quoteExpiryWarningDays: Int { didSet { defaults.set(quoteExpiryWarningDays, forKey: Key.expiryDays) } }
 
+    /// Fırsatın beklenen kapanış tarihinden kaç gün önce hatırlatılacağı (varsayılan 7).
+    @Published var opportunityCloseReminderEnabled: Bool { didSet { defaults.set(opportunityCloseReminderEnabled, forKey: Key.oppCloseEnabled) } }
+    @Published var opportunityCloseReminderDays: Int { didSet { defaults.set(opportunityCloseReminderDays, forKey: Key.oppCloseDays) } }
+
+    // MARK: Genel
+
+    /// Yeni fırsat ve tekliflerin varsayılan para birimi.
+    @Published var defaultCurrency: Currency { didSet { defaults.set(defaultCurrency.rawValue, forKey: Key.currency) } }
+
     // MARK: Dışa aktarma
 
     @Published var crmEmail: String { didSet { defaults.set(crmEmail, forKey: Key.crmEmail) } }
@@ -153,6 +166,9 @@ final class AppSettings: ObservableObject {
         quoteFollowUpDays = (defaults.array(forKey: Key.followUpDays) as? [Int]) ?? Self.defaultQuoteFollowUpDays
         quoteExpiryWarningEnabled = flag(Key.expiryEnabled, true)
         quoteExpiryWarningDays = number(Key.expiryDays, Self.defaultQuoteExpiryWarningDays)
+        opportunityCloseReminderEnabled = flag(Key.oppCloseEnabled, true)
+        opportunityCloseReminderDays = number(Key.oppCloseDays, Self.defaultOpportunityCloseReminderDays)
+        defaultCurrency = defaults.string(forKey: Key.currency).flatMap(Currency.init(rawValue:)) ?? .tl
         crmEmail = defaults.string(forKey: Key.crmEmail) ?? ""
     }
 

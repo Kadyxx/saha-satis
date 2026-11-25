@@ -9,6 +9,7 @@ extension TaskSource {
         case .quoteFollowUp: return "doc.text"
         case .quoteExpiry: return "clock.badge.exclamationmark"
         case .visitFrequency: return "building.2"
+        case .opportunityClose: return "flag"
         }
     }
 }

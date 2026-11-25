@@ -6,7 +6,8 @@ import Foundation
 ///
 /// Yeniden hesaplama zamanları: uygulama açılışı / öne gelişi, her veri değişikliği (`appDataDidChange`,
 /// kısa bir bekleme ile birleştirilir), ayar değişikliği ve `BGAppRefreshTask`.
-/// Her hesaplamada önce ziyaret sıklığı görevleri eşitlenir (`VisitFrequencyService`).
+/// Her hesaplamada önce ziyaret sıklığı görevleri (`VisitFrequencyService`) ve fırsat kapanış hatırlatmaları
+/// (`OpportunityReminderService`) eşitlenir.
 @MainActor
 final class ReminderScheduler: ObservableObject {
     let repositories: Repositories
@@ -98,6 +99,11 @@ final class ReminderScheduler: ObservableObject {
             try VisitFrequencyService(
                 repositories: repositories,
                 rules: settings.visitFrequencyRules,
+                calendar: calendar
+            ).sync(now: current)
+            try OpportunityReminderService(
+                repositories: repositories,
+                rules: settings.opportunityReminderRules,
                 calendar: calendar
             ).sync(now: current)
             plan = try makePlan(now: current)

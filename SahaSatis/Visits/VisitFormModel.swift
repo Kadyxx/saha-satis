@@ -13,6 +13,14 @@ struct VisitFormSeed {
     var autoStartRecording = false
 }
 
+/// Ziyaret formundaki "Fırsat" seçimi.
+enum OpportunityLink: Hashable {
+    case none
+    case existing(UUID)
+    /// "Yeni fırsat aç": başlık `newOpportunityTitle` alanından gelir.
+    case new
+}
+
 /// Ziyaret formunun durumu. Veriye yalnızca Repository'ler üzerinden erişir (`VisitService`).
 @MainActor
 @Observable
@@ -33,6 +41,9 @@ final class VisitFormModel {
     var hasNextStepDate = false
     var nextStepDate = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
     var errorMessage: String?
+    /// Ziyaretin bağlanacağı fırsat (yok / mevcut / yeni).
+    var opportunityLink: OpportunityLink = .none
+    var newOpportunityTitle = ""
 
     let voice: VoiceNoteController
     /// Ham ses metni: sesli not parçalarının birleşimi (kullanıcı notu düzenlese de değişmez).
@@ -40,10 +51,12 @@ final class VisitFormModel {
 
     private let repositories: Repositories
     private let reminderMinutes: Int
+    private let defaultCurrency: Currency
 
     init(
         repositories: Repositories,
         reminderMinutes: Int,
+        defaultCurrency: Currency = .tl,
         engine: SpeechEngine,
         customer: Customer?,
         visit: Visit? = nil,
@@ -51,6 +64,7 @@ final class VisitFormModel {
     ) {
         self.repositories = repositories
         self.reminderMinutes = reminderMinutes
+        self.defaultCurrency = defaultCurrency
         self.existingVisit = visit
         self.seed = seed
         self.voice = VoiceNoteController(engine: engine)
@@ -73,6 +87,7 @@ final class VisitFormModel {
             }
             reloadContacts()
             selectedContactIDs = Set((visit.contacts ?? []).map(\.id))
+            if let linked = visit.opportunity { opportunityLink = .existing(linked.id) }
         } else {
             topic = seed.topic
             note = seed.note
@@ -87,7 +102,11 @@ final class VisitFormModel {
     }
 
     var isEditing: Bool { existingVisit != nil }
-    var canSave: Bool { customer != nil }
+    var canSave: Bool {
+        guard customer != nil else { return false }
+        if opportunityLink == .new { return !VisitText.singleLine(newOpportunityTitle).isEmpty }
+        return true
+    }
 
     // MARK: - Müşteri ve kişiler
 
@@ -95,6 +114,8 @@ final class VisitFormModel {
     func customerChanged() {
         reloadContacts()
         selectedContactIDs = []
+        opportunityLink = .none
+        newOpportunityTitle = ""
     }
 
     private func reloadContacts() {
@@ -111,6 +132,22 @@ final class VisitFormModel {
         } else {
             selectedContactIDs.insert(contact.id)
         }
+    }
+
+    // MARK: - Fırsat
+
+    /// Seçilebilecek fırsatlar: müşterinin açık fırsatları (+ düzenlenen ziyaretin zaten bağlı olduğu fırsat,
+    /// kapanmış olsa bile). Beklenen kapanış tarihi yakın olan önce.
+    var availableOpportunities: [Opportunity] {
+        guard let customer, let all = try? repositories.opportunities.opportunities(for: customer) else { return [] }
+        let linkedID = existingVisit?.opportunity?.id
+        return PipelineGrouping.groups(from: all.filter { $0.stage.isOpen || $0.id == linkedID })
+            .flatMap(\.opportunities)
+    }
+
+    private func selectedOpportunity() -> Opportunity? {
+        guard case .existing(let id) = opportunityLink else { return nil }
+        return try? repositories.opportunities.opportunity(id: id)
     }
 
     // MARK: - Konu önerileri
@@ -158,11 +195,12 @@ final class VisitFormModel {
         draft.transcript = rawTranscript
         draft.nextStep = nextStep.trimmingCharacters(in: .whitespacesAndNewlines)
         draft.nextStepDate = hasNextStepDate ? nextStepDate : nil
+        draft.newOpportunityTitle = opportunityLink == .new ? newOpportunityTitle : ""
 
         let selected = contacts.filter { selectedContactIDs.contains($0.id) }
-        let service = VisitService(repositories: repositories, reminderMinutes: reminderMinutes)
+        let service = VisitService(repositories: repositories, reminderMinutes: reminderMinutes, defaultCurrency: defaultCurrency)
         do {
-            try service.save(draft, customer: customer, contacts: selected, existing: existingVisit)
+            try service.save(draft, customer: customer, contacts: selected, opportunity: selectedOpportunity(), existing: existingVisit)
             return true
         } catch {
             errorMessage = "Ziyaret kaydedilemedi: \(error.localizedDescription)"

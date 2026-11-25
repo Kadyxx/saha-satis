@@ -358,6 +358,58 @@ SPEC palet tablosuna eklendi; yalnızca `TodayView`'daki kaydırma düğmelerind
 6. **Ekran görüntüleri:** `screen-visitForm-*` / `screen-visitRecording-*` (Konu alanı + öneriler; örnek veride Örnek
    Makina'nın üç geçmiş konusu öneri çıkar) ve `screen-visitHistory-*` (konu başlıklı satırlar) CI'da yenilenir.
 
+## Faz 2 — Fırsatlar — kararlar
+
+1. **Aşama adı "Aday" değil "Yeni".** İstekte ilk aşama "Aday" yazıyordu; ama müşteri durumu zaten "Aday"
+   (Mevcut / Aday / Pasif) ve karışmasın diye `OpportunityStage.lead` metni daha önce "Yeni" yapılmıştı (bkz. "Düzeltmeler
+   ve Ayarlar ekranı" 2. madde). Aynı kararı korudum: Yeni, Nitelikli, Teklif verildi, Pazarlık, Kazanıldı, Kaybedildi.
+   İstenirse tek satırlık değişiklik (`Enums.swift` → `OpportunityStage.title`). SPEC'e aşama adları eklendi.
+2. **Sekme.** Fırsat/Teklif: üstte Fırsatlar / Teklifler seçici. Teklifler şimdilik "bir sonraki adımda" açıklamalı boş ekran.
+   Fırsatlar aşama sırasıyla gruplanır; **boş gruplar gizlenir**. Başlık: "Teklif verildi (3)" + altında para birimi
+   başına toplam ("480.000 ₺ · 12.500 $"; TL, USD, EUR sırası, tutarı 0 olanlar toplama girmez). Başlığa dokununca grup
+   açılır/kapanır; **Kazanıldı ve Kaybedildi varsayılan kapalı** (kapalı grupta yalnızca başlık görünür). `Section(isExpanded:)`
+   yalnızca kenar çubuğu stilinde çalıştığı için başlık düğmeyle elle yapıldı. Grup içi sıra: beklenen kapanış tarihi
+   yakın olan önce, tarihsizler sonda, eşitlikte başlığa göre (Türkçe). Açık fırsatın kapanış günü geçtiyse tarih kırmızı.
+3. **Form.** Müşteri (yeni kayıtta seçilir, düzenlemede sabit), başlık, açıklama, tahmini tutar, para birimi (TL/USD/EUR
+   segmenti; yeni fırsatta **Ayarlar'daki varsayılan**, düzenlemede kayıtlı olan), aşama, beklenen kapanış tarihi
+   (anahtarla; açılınca iki hafta sonrası önerilir). **Kaybedildi seçilince "Kayıp sebebi" alanı çıkar; isteğe bağlıdır**
+   (boş bırakılabilir). Tutar metni `AmountParser` ile okunur: "1.250,50", "1250.5", "1.250" (binlik) hepsi kabul;
+   boş = 0; ayrıştırılamayan tutarda alan kırmızı ve kaydet kapalı. Tarih gün başına yuvarlanır.
+4. **Detay.** Başlık + müşteri bağlantısı (müşteri sekmesinde açar), tutar, kapanış, kayıp sebebi; aşama menüsü
+   (Kaybedildi seçilince sebep sorulur, "Vazgeç" mümkün); açık kapanış hatırlatması varsa tarihi; bağlı ziyaretler
+   (dokununca ziyaret düzenlenir); bağlı teklifler (şimdilik boş açıklama, teklif varsa numara + durum). Düzenle / Sil menüsü
+   (sil: onay; bağlı ziyaretler silinmez, bağlantısı kalkar; hatırlatma görevi de silinir). Silme, müşteri silmedeki gibi
+   önce ekrandan çıkıp 0,6 sn sonra yapılır.
+5. **Müşteri detayı.** "Fırsatlar" bölümü doldu (aşama sırasıyla, aşama rozetli satırlar; dokununca fırsat detayı) ve
+   "+ Fırsat ekle" (müşteri seçili gelir).
+6. **Ziyaret formu.** Müşteri seçilince "Fırsat" bölümü: Bağlama / müşterinin **açık** fırsatları / "Yeni fırsat aç…"
+   (başlık yazılır; kaydedince müşteri için "Yeni" aşamasında, Ayarlar'daki para biriminde fırsat açılır ve ziyarete
+   bağlanır). Düzenlemede ziyaretin zaten bağlı olduğu fırsat kapalı olsa da listelenir; "Bağlama" ile bağ kaldırılır.
+   Müşteri değişince seçim sıfırlanır. "Yeni fırsat aç" seçiliyken başlık boşsa kaydet kapalı.
+7. **Kapanış hatırlatması (`OpportunityReminderService`).** Yeni `TaskSource.opportunityClose`; `FollowUpTask.opportunity`
+   ilişkisi eklendi (`Opportunity.tasks`, silinince görevleri de silinir). Kurallar:
+   - Yalnızca **açık** aşamada, kapanış tarihi olan ve ayarı açık fırsat için; vade = kapanış günü − X gün, hatırlatma
+     saatinde. X = Ayarlar → Fırsatlar → "Kapanıştan N gün önce" (varsayılan 7, 1–60) ve aç/kapa anahtarı.
+   - Kapanışa X günden az kaldıysa vade **bugünün hatırlatma saatine çekilir**; kapanış günü geçmişse hatırlatma kurulmaz.
+   - Başlık "Fırsat kapanışı yaklaşıyor: <başlık> (<tarih>)"; bildirim başlığı müşteri adı.
+   - **Kazanıldı/Kaybedildi olunca bekleyen hatırlatma silinir**; açık aşamaya dönülürse (tarih gelecekteyse) yeniden kurulur.
+   - İki yol: `refresh(fırsat)` (form kaydı ve aşama değişimi: var olanı günceller) ve `sync` (**her hatırlatma
+     hesaplamasında**, yani `ReminderScheduler`'ın içinde: eksikleri kurar, geçersizleri siler, **var olan açık
+     hatırlatmaya dokunmaz** — kullanıcı ertelemiş olabilir). Tamamlanan hatırlatma aynı vade için yeniden kurulmaz.
+     Ayarlardaki gün sayısı değişince mevcut açık hatırlatmaların tarihi değişmez (yalnızca yeni kurulanlar etkilenir).
+8. **Ayarlar.** Yeni "Fırsatlar" bölümü: varsayılan para birimi (TL/USD/EUR; SPEC "Diğer ayarlar"da vardı, daha önce
+   yoktu), kapanış hatırlatması anahtarı ve gün sayısı. Yeni `AppSettings` alanları App Group UserDefaults'ta.
+9. **Veri.** Şema değişikliği: `FollowUpTask.opportunity?` ve `Opportunity.tasks?` (opsiyonel ilişki, hafif geçiş).
+   `FollowUpTaskRepository.add` artık `opportunity:` alan beşli sürümü gerçekler; eski dört parametreli çağrı bir
+   uzantıyla duruyor. Yeni `cancelOpenTasks(for: Opportunity)`.
+10. **Ekran görüntüleri (DEBUG):** `opportunities` (liste), `opportunityDetail`, `opportunityForm` (açık fırsat düzenleme),
+    `opportunityLost` (kayıp fırsat düzenleme: kayıp sebebi alanı), açık/koyu; ayrıca `detail` (müşteri detayında dolu Fırsatlar)
+    ve `visitForm` (Fırsat bölümü) yenilenir. Örnek veri hayali: 7 fırsat, 5 aşama; ilk fırsat bir ziyarete bağlı.
+11. **Yapılmayanlar:** teklifler (Faz 2'nin sonraki adımı), fırsat arama/filtre, görev saatini fırsat bazında değiştirme,
+    kazanıldı olunca teklif/fırsat otomasyonu, widget'ta fırsat.
+    **Elle denenmesi gerekenler:** grup başlığına dokunarak açma/kapama, Kaybedildi seçince sebep penceresi, tutar
+    klavyesi (`.decimalPad` Türkçe cihazda virgül verir), ziyaret formundaki fırsat seçici.
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

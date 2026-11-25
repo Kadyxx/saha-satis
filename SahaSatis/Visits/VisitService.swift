@@ -13,6 +13,8 @@ struct VisitDraft: Equatable {
     var nextStep = ""
     /// Seçilirse bağlı bir `FollowUpTask` (source: `visitNextStep`) oluşur.
     var nextStepDate: Date?
+    /// Doluysa (ve ziyarete mevcut bir fırsat bağlanmadıysa) bu başlıkla yeni bir fırsat açılır ve ziyarete bağlanır.
+    var newOpportunityTitle = ""
 }
 
 /// Ziyaret kaydetme iş kuralları (Repository'lerin üstünde):
@@ -26,19 +28,37 @@ struct VisitService {
     /// Tarihli görevlerin bildirim saati, gün başından itibaren dakika (Ayarlar → hatırlatma saati; varsayılan 09:00).
     let reminderMinutes: Int
     var calendar: Calendar = .current
+    /// "Yeni fırsat aç" ile açılan fırsatın para birimi (Ayarlar → varsayılan para birimi).
+    var defaultCurrency: Currency = .tl
 
+    /// - Parameter opportunity: Ziyarete bağlanacak mevcut fırsat (nil: bağlantı yok / kaldır).
     @discardableResult
-    func save(_ draft: VisitDraft, customer: Customer, contacts: [Contact], existing: Visit?) throws -> Visit {
+    func save(
+        _ draft: VisitDraft,
+        customer: Customer,
+        contacts: [Contact],
+        opportunity: Opportunity? = nil,
+        existing: Visit?
+    ) throws -> Visit {
+        var linked = opportunity
+        let newTitle = VisitText.singleLine(draft.newOpportunityTitle)
+        if linked == nil, !newTitle.isEmpty {
+            let created = Opportunity(title: newTitle, currency: defaultCurrency)
+            try repositories.opportunities.add(created, customer: customer)
+            linked = created
+        }
+
         let visit: Visit
         if let existing {
             visit = existing
             apply(draft, to: visit)
             visit.contacts = contacts
+            visit.opportunity = linked
             try repositories.visits.update(visit)
         } else {
             visit = Visit()
             apply(draft, to: visit)
-            try repositories.visits.add(visit, customer: customer, contacts: contacts, opportunity: nil)
+            try repositories.visits.add(visit, customer: customer, contacts: contacts, opportunity: linked)
             try closeVisitFrequencyTasks(for: customer)
         }
         try syncNextStepTask(for: visit, customer: customer, draft: draft)

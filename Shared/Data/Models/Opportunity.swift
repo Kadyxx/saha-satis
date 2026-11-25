@@ -22,6 +22,9 @@ final class Opportunity {
     var quotes: [Quote]?
     @Relationship(deleteRule: .nullify, inverse: \Visit.opportunity)
     var visits: [Visit]?
+    /// Kapanış tarihi hatırlatması gibi bu fırsattan doğan görevler (fırsat silinince onlar da silinir).
+    @Relationship(deleteRule: .cascade, inverse: \FollowUpTask.opportunity)
+    var tasks: [FollowUpTask]?
 
     init(
         title: String,

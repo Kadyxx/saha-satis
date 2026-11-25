@@ -21,6 +21,7 @@ struct VisitFormView: View {
         _model = State(initialValue: VisitFormModel(
             repositories: context.repositories,
             reminderMinutes: context.settings.defaultReminderTime.minutesSinceMidnight,
+            defaultCurrency: context.settings.defaultCurrency,
             engine: context.makeSpeechEngine(),
             customer: customer,
             visit: visit,
@@ -34,6 +35,7 @@ struct VisitFormView: View {
                 customerSection
                 contactsSection
                 topicSection
+                opportunitySection
                 detailsSection
                 VoiceNoteSection(controller: model.voice)
                 noteSection
@@ -161,6 +163,34 @@ struct VisitFormView: View {
             Text("İsteğe bağlı. CRM raporunda \"Konu\" satırına yazılır.")
         }
         .listRowBackground(Theme.surface)
+    }
+
+    /// "Fırsata bağla / yeni fırsat aç": müşterinin açık fırsatları veya yeni fırsat başlığı.
+    @ViewBuilder
+    private var opportunitySection: some View {
+        if model.customer != nil {
+            Section {
+                Picker("Fırsat", selection: $model.opportunityLink) {
+                    Text("Bağlama").tag(OpportunityLink.none)
+                    ForEach(model.availableOpportunities) { opportunity in
+                        Text(opportunity.title).tag(OpportunityLink.existing(opportunity.id))
+                    }
+                    Text("Yeni fırsat aç…").tag(OpportunityLink.new)
+                }
+                if model.opportunityLink == .new {
+                    FormTextField(title: "Fırsat başlığı", text: $model.newOpportunityTitle)
+                }
+            } header: {
+                Text("Fırsat")
+            } footer: {
+                if model.opportunityLink == .new {
+                    Text("Kaydedince bu müşteri için \"Yeni\" aşamasında bir fırsat açılır; ayrıntılarını Fırsat/Teklif sekmesinden tamamlayabilirsiniz.")
+                } else {
+                    Text("İsteğe bağlı. Ziyareti bir fırsata bağlarsanız fırsatın detayında görünür.")
+                }
+            }
+            .listRowBackground(Theme.surface)
+        }
     }
 
     private var detailsSection: some View {

@@ -157,3 +157,11 @@ Giriş (Sign in with Apple), iCloud senkronu, ekranlar ve hatırlatma motoru **y
 10. **Ekran görüntüsü senaryoları (DEBUG):** `visitForm` (dolu form), `visitRecording` (sahte motor canlı metin
     gönderir: "Dinleniyor…" + Duraklat/Bitir), `visitHistory` (detay, ziyaret geçmişine kaydırılmış). Örnek veride
     Örnek Makina için 3 ziyaret (80/34/12 gün önce) ve 1 bağlı takip görevi var.
+
+## Durum günlüğü (devam)
+
+- Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.
+- Ziyaret kaydı: CI ilk denemede yeşil (87 test; 24 ekran görüntüsü, `screen-visit*`). Ekranlar elle incelendi.
+  **Elle denenmesi gerekenler (gerçek iPhone):** mikrofon/konuşma tanıma izin akışı, Türkçe canlı metin, duraklat/devam,
+  1 dakikayı aşan kayıt (otomatik parçalama), izin reddedilince klavyeyle yazma.
+- Bu noktada duruldu; sıradaki iş için yeni talimat bekleniyor.

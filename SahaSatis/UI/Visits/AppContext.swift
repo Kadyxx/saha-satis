@@ -10,11 +10,15 @@ final class AppContext: ObservableObject {
     let reminders: ReminderScheduler
     /// Bildirim temsilcisi; `UNUserNotificationCenter.delegate` zayıf tuttuğu için burada saklanır.
     let notificationResponder = NotificationResponder()
+    /// Görev/ziyaret/teklif değişince widget'ları yeniler.
+    let widgetReloader = WidgetReloader()
 
     /// Başka bir ekrandan (bildirime dokunma, Bugün satırı) istenen sekme ve müşteri.
     /// Ekranlar işledikten sonra `nil`'e çeker.
     @Published var requestedTab: AppTab?
     @Published var customerToOpen: UUID?
+    /// Widget'taki "+ Ziyaret" bağlantısı: ziyaret formunu uygulama düzeyinde açar.
+    @Published var presentVisitForm = false
 
     init(
         repositories: Repositories,
@@ -39,6 +43,23 @@ final class AppContext: ObservableObject {
     func open(customer: Customer) {
         customerToOpen = customer.id
         requestedTab = .customers
+    }
+
+    /// Widget bağlantıları (`sahasatis://...`). Görev: müşterisi varsa detayı, yoksa Bugün ekranı.
+    func handle(url: URL) {
+        guard let link = WidgetLink(url: url) else { return }
+        switch link {
+        case .today:
+            requestedTab = .today
+        case .newVisit:
+            presentVisitForm = true
+        case .task(let id):
+            if let customer = (try? repositories.tasks.task(id: id))?.customer {
+                open(customer: customer)
+            } else {
+                requestedTab = .today
+            }
+        }
     }
 
     /// Bildirim aksiyonları (Tamamlandı / Yarına ertele) ve bildirime dokunma (ilgili kaydı aç).

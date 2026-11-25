@@ -22,6 +22,25 @@ enum AppFormat {
         return formatter.string(from: date)
     }
 
+    /// "27 Kas Cum"
+    static func shortDay(_ date: Date, timeZone: TimeZone = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = timeZone
+        formatter.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return formatter.string(from: date)
+    }
+
+    /// "480.000 ₺" (kuruşsuz, Türkçe binlik ayracı)
+    static func money(_ amount: Double, currency: Currency) -> String {
+        let formatter = NumberFormatter()
+        formatter.locale = locale
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        let number = formatter.string(from: NSNumber(value: amount)) ?? "\(Int(amount))"
+        return "\(number) \(currency.symbol)"
+    }
+
     /// "21 Kas 2026 14:30"
     static func dateTime(_ date: Date, timeZone: TimeZone = .current) -> String {
         let formatter = DateFormatter()

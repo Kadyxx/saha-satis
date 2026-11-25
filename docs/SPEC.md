@@ -209,12 +209,15 @@ Tüm renkler `Shared/Assets.xcassets` içinde açık/koyu mod varyantlı "Color 
 | `onAction` / `onBrand` | #303841 | #22272F |
 | `overdue` (gecikmiş) | #B3261E | #FF6B6B |
 | `done` (tamamlandı) | #76ABAE | #76ABAE |
+| `swipeDone` (kaydırma: Tamamlandı zemini) | #2F6265 | #2F6265 |
+| `swipePostpone` (kaydırma: Ertele zemini) | #A63A12 | #A63A12 |
 
 **Değerlendirme rozetleri:** Önemli = `action`, Potansiyelli = `brand`, Zayıf = #9AA3AE (her iki modda; `ratingWeak`).
 
 **Kurallar**
 
 - #76ABAE (`brand`) ve #FF5722 (`action`) açık zeminde küçük yazı rengi olarak kullanılmaz (kontrast yetersiz). Turkuaz yazı için `brandText`; bu renklerin üstündeki yazı `onAction` / `onBrand` olur.
+- `swipeDone` / `swipePostpone`: `swipeActions` düğmelerinde sistem yazı rengini değiştirtmez (hep beyaz); bu yüzden zeminleri iki modda da koyudur (beyaz yazıyla ≥ 6:1). Başka yerde kullanılmaz.
 - `onAction` ve `onBrand` şimdilik aynı değerlere sahiptir ama ayrı Color Set'lerdir; gerekirse ayrışabilir.
 
 ## Yapay zekâ ve kartvizit

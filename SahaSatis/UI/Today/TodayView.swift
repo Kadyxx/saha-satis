@@ -110,11 +110,11 @@ struct TodayView: View {
                         Button { model.complete(task) } label: {
                             Label("Tamamlandı", systemImage: "checkmark")
                         }
-                        .tint(Theme.done)
+                        .tint(Theme.swipeDone)
                         Button { postponeTarget = task } label: {
                             Label("Ertele", systemImage: "clock.arrow.circlepath")
                         }
-                        .tint(Theme.action)
+                        .tint(Theme.swipePostpone)
                     }
                     .listRowBackground(Theme.surface)
                 }

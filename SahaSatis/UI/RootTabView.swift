@@ -67,7 +67,16 @@ struct RootTabView: View {
         .environment(\.locale, AppFormat.locale)
         // Hatırlatma motoru: açılışta izin + planlama; öne gelince yeniden planla; arka plana giderken
         // günlük yenileme isteği ver (DEBUG ekran görüntülerinde kapalı).
-        .task { await context.reminders.start() }
+        .task {
+            context.widgetReloader.start()
+            context.widgetReloader.reloadNow()
+            await context.reminders.start()
+        }
+        // Widget bağlantıları: görev aç, Bugün, yeni ziyaret.
+        .onOpenURL { context.handle(url: $0) }
+        .sheet(isPresented: $context.presentVisitForm) {
+            VisitFormView(context: context, customer: nil, visit: nil)
+        }
         .onChange(of: scenePhase) {
             guard !DebugLaunch.skipNotifications else { return }
             switch scenePhase {

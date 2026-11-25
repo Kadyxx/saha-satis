@@ -81,8 +81,9 @@ struct RegionView: View {
     // MARK: - Seviye 1: şehirler
 
     private var cityLevel: some View {
-        Group {
-            List {
+        List {
+            filterSection
+            Section {
                 ForEach(model.cities) { summary in
                     NavigationLink(value: RegionRoute.city(summary.city)) {
                         RegionRow(title: RegionNaming.city(summary.city), stats: summary.stats, unit: "müşteri")
@@ -90,12 +91,8 @@ struct RegionView: View {
                     .listRowBackground(Theme.surface)
                 }
             }
-            .scrollContentBackground(.hidden)
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            RegionFilterBar(filter: $model.filter)
-                .background(Theme.background)
-        }
+        .scrollContentBackground(.hidden)
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
         .navigationTitle("Bölge")
@@ -106,32 +103,27 @@ struct RegionView: View {
     private func districtLevel(city: String) -> some View {
         let districts = model.districts(inCity: city)
         let stats = model.stats(inCity: city)
-        return Group {
+        return List {
+            filterSection
             if districts.isEmpty {
-                emptyState(
+                emptySection(
                     title: model.filter.isActive ? "Filtreye uyan müşteri yok" : "Bu şehirde müşteri yok",
                     message: model.filter.isActive ? "Filtreleri değiştirmeyi deneyin." : "Müşteriler sekmesinden müşteri ekleyin."
                 )
             } else {
-                List {
-                    Section {
-                        ForEach(districts) { summary in
-                            NavigationLink(value: RegionRoute.district(city: city, district: summary.district)) {
-                                RegionRow(title: RegionNaming.district(summary.district), stats: summary.stats, unit: "müşteri")
-                            }
-                            .listRowBackground(Theme.surface)
+                Section {
+                    ForEach(districts) { summary in
+                        NavigationLink(value: RegionRoute.district(city: city, district: summary.district)) {
+                            RegionRow(title: RegionNaming.district(summary.district), stats: summary.stats, unit: "müşteri")
                         }
-                    } header: {
-                        Text("\(stats.customers) müşteri · \(districts.count) ilçe")
+                        .listRowBackground(Theme.surface)
                     }
+                } header: {
+                    Text("\(stats.customers) müşteri · \(districts.count) ilçe")
                 }
-                .scrollContentBackground(.hidden)
             }
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            RegionFilterBar(filter: $model.filter)
-                .background(Theme.background)
-        }
+        .scrollContentBackground(.hidden)
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
         .navigationTitle(RegionNaming.city(city))
@@ -142,49 +134,60 @@ struct RegionView: View {
 
     private func customerLevel(city: String, district: String) -> some View {
         let groups = model.zoneGroups(inCity: city, district: district)
-        return Group {
+        return List {
+            filterSection
             if groups.isEmpty {
-                emptyState(
+                emptySection(
                     title: model.filter.isActive ? "Filtreye uyan müşteri yok" : "Bu ilçede müşteri yok",
                     message: model.filter.isActive ? "Filtreleri değiştirmeyi deneyin." : "Müşteriler sekmesinden müşteri ekleyin."
                 )
             } else {
-                List {
-                    ForEach(groups) { group in
-                        Section {
-                            ForEach(group.customers) { customer in
-                                NavigationLink(value: customer) {
-                                    RegionCustomerRow(customer: customer, context: model.context)
-                                }
-                                .listRowBackground(Theme.surface)
+                ForEach(groups) { group in
+                    Section {
+                        ForEach(group.customers) { customer in
+                            NavigationLink(value: customer) {
+                                RegionCustomerRow(customer: customer, context: model.context)
                             }
-                        } header: {
-                            Text("\(RegionNaming.zone(group.zone)) (\(group.customers.count))")
+                            .listRowBackground(Theme.surface)
                         }
+                    } header: {
+                        Text("\(RegionNaming.zone(group.zone)) (\(group.customers.count))")
                     }
                 }
-                .scrollContentBackground(.hidden)
             }
         }
-        .safeAreaInset(edge: .top, spacing: 0) {
-            RegionFilterBar(filter: $model.filter)
-                .background(Theme.background)
-        }
+        .scrollContentBackground(.hidden)
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
         .navigationTitle(RegionNaming.district(district))
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func emptyState(title: String, message: String) -> some View {
-        ContentUnavailableView {
-            Label(title, systemImage: "mappin.slash")
-                .foregroundStyle(Theme.textPrimary)
-        } description: {
-            Text(message)
-                .foregroundStyle(Theme.textSecondary)
+    /// Filtre çubuğu listenin ilk satırıdır (listeyle birlikte kayar). Liste dışına koymak gezinme çubuğuyla
+    /// güvenli alan çakışması / fazladan boşluk üretiyordu.
+    private var filterSection: some View {
+        Section {
+            RegionFilterBar(filter: $model.filter)
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func emptySection(title: String, message: String) -> some View {
+        Section {
+            VStack(spacing: 8) {
+                Label(title, systemImage: "mappin.slash")
+                    .font(.headline)
+                    .foregroundStyle(Theme.textPrimary)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
+            .listRowBackground(Color.clear)
+        }
     }
 
     /// Silinen modele ekran hâlâ bakarken erişilmesin diye: önce detaydan çık, kısa süre sonra sil.

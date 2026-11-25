@@ -81,8 +81,7 @@ struct RegionView: View {
     // MARK: - Seviye 1: şehirler
 
     private var cityLevel: some View {
-        VStack(spacing: 0) {
-            RegionFilterBar(filter: $model.filter)
+        Group {
             List {
                 ForEach(model.cities) { summary in
                     NavigationLink(value: RegionRoute.city(summary.city)) {
@@ -92,6 +91,10 @@ struct RegionView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            RegionFilterBar(filter: $model.filter)
+                .background(Theme.background)
         }
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
@@ -103,8 +106,7 @@ struct RegionView: View {
     private func districtLevel(city: String) -> some View {
         let districts = model.districts(inCity: city)
         let stats = model.stats(inCity: city)
-        return VStack(spacing: 0) {
-            RegionFilterBar(filter: $model.filter)
+        return Group {
             if districts.isEmpty {
                 emptyState(
                     title: model.filter.isActive ? "Filtreye uyan müşteri yok" : "Bu şehirde müşteri yok",
@@ -126,6 +128,10 @@ struct RegionView: View {
                 .scrollContentBackground(.hidden)
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            RegionFilterBar(filter: $model.filter)
+                .background(Theme.background)
+        }
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
         .navigationTitle(RegionNaming.city(city))
@@ -136,8 +142,7 @@ struct RegionView: View {
 
     private func customerLevel(city: String, district: String) -> some View {
         let groups = model.zoneGroups(inCity: city, district: district)
-        return VStack(spacing: 0) {
-            RegionFilterBar(filter: $model.filter)
+        return Group {
             if groups.isEmpty {
                 emptyState(
                     title: model.filter.isActive ? "Filtreye uyan müşteri yok" : "Bu ilçede müşteri yok",
@@ -160,6 +165,10 @@ struct RegionView: View {
                 }
                 .scrollContentBackground(.hidden)
             }
+        }
+        .safeAreaInset(edge: .top, spacing: 0) {
+            RegionFilterBar(filter: $model.filter)
+                .background(Theme.background)
         }
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })

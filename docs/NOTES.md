@@ -240,6 +240,62 @@ hafta sonu kaydırma, kaydırma düğmesi görünümü, `BGAppRefreshTask` (Xcod
 sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"<bundle id>.refresh"]` ile tetiklenebilir; Xcode kullanılamadığı
 için yalnızca ertesi sabah bildirimlerin güncel olup olmadığına bakılabilir).
 
+## Widget'lar ve kaydırma düğmesi düzeltmesi — kararlar
+
+**Kaydırma düğmesi yazı rengi.** `swipeActions` düğmelerinde sistem yazıyı/simgeyi hep beyaz çizer; yalnızca zemin
+(`.tint`) verilebilir (bildiğim kadarıyla; cihazda denenemedi). Bu yüzden `onBrand`/`onAction` yazı rengi yerine
+SPEC'in yedek yolu uygulandı: zemin iki modda da koyu tonlara çekildi. Yeni Color Set'ler `swipeDone` (#2F6265, beyazla
+≈ 6,9:1) ve `swipePostpone` (#A63A12, beyazla ≈ 6,5:1); iki modda aynı değer (zemin zaten koyu, mod farkı gerekmiyor).
+SPEC palet tablosuna eklendi; yalnızca `TodayView`'daki kaydırma düğmelerinde kullanılır.
+
+**Widget'lar** (`Merhaba` widget'ı kaldırıldı):
+
+1. **Ortak kod `Shared/` altına taşındı.** Widget aynı SwiftData deposunu okuyacağı için `SahaSatis/Data` →
+   `Shared/Data` (modeller, repository'ler, `Persistence`), ayrıca `AppFormat` ve yeni `Shared/Widgets/`. Hem uygulama hem
+   widget hedefi `Shared`'ı derler. Önceki NOTES'taki "modeller uygulama hedefinde" kararı bununla değişti.
+2. **Test hedefi artık `Shared`'ı derlemiyor** (`project.yml`). Önceden `@Model` olmayan Shared tipleri (`TimeOfDay`,
+   `AppSettings`) testlerde iki modülde tanımlıydı (CI'da çakışma hatası verdi); `@Model` sınıfları da aynı şekilde
+   çift tanımlanırsa SwiftData çalışma zamanında çakışırdı. Testler `@testable import SahaSatis` ile uygulamadaki tek
+   kopyayı kullanır. Ekran görüntüsü testleri de buna geçti.
+3. **Veri akışı.** `WidgetDataLoader` depodan `WidgetData` (değer tipleri: açık görevler, bekleyen teklif sayısı ve
+   para birimi başına toplam, aktarılmamış ziyaret sayısı) okur; `WidgetSnapshot.make(data:at:calendar:)` verilen an için
+   gecikmiş/bugün/hafta/sıradaki işi hesaplar. Görünümler yalnızca `WidgetSnapshot` alır; bu yüzden testlerde ve ekran
+   görüntülerinde SwiftData gerekmez. Sınıflandırma gün bazlıdır (uygulamadaki Bugün ekranıyla aynı kural).
+   **Bekleyen teklif** = durumu "Gönderildi" veya "Takipte". **Aktarılmamış ziyaret sayısı tüm günleri** sayar (Bugün
+   ekranı ve gün sonu hatırlatması yalnızca bugünü sayar); widget'ın amacı unutulanı göstermek.
+4. **Zaman çizelgesi** (`TasksProvider`, dört widget ortak): şu an + 24 saat içinde (gece yarısına kadar) her görev
+   saatinde bir giriş (en çok 20) + gece yarısı; politika `.after(gece yarısı)`. Uygulama `appDataDidChange` ile
+   (`WidgetReloader`, 300 ms birleştirir) ve açılışta `reloadAllTimelines()` çağırır; kayıt yapan her ekran buna
+   otomatik dahil (repository kaydı). Galeri/önizleme `WidgetData.sample` (hayali) gösterir.
+5. **Bugünün takipleri (systemMedium):** başlık, gecikmiş sayısı, en çok 4 satır (önce gecikmişler), fazlası "+N takip
+   daha", boşsa "Bugün için takip yok". Satır tek satır ("başlık · müşteri", sağda saat/"Gecikmiş") çünkü iki satırlı 4
+   satır 169 pt'ye sığmıyor. Onay kutusu `Button(intent: CompleteTaskIntent)`; satıra dokunmak `sahasatis://task/<id>`.
+6. **Haftalık görünüm (systemLarge):** üstte "+ Ziyaret" (`sahasatis://visit/new`), bekleyen teklif sayısı + toplamlar,
+   aktarılmamış ziyaret sayısı; altında gecikmişler ve bugün + 6 günün (yalnızca görevi olan günler) görevleri, en çok
+   9 satır + "+N takip daha". Görev satırlarında da onay kutusu var.
+7. **Sıradaki iş (accessoryRectangular):** en yakın açık görev ("Müşteri – başlık", zaman); gecikmişse ⚠ simgesi.
+   **Bekleyen iş sayısı (accessoryCircular):** gecikmiş + bugün. Kilit ekranı widget'ları sistem tarafından tek renge
+   boyandığı için palet rengi yok, sistem stilleri (`primary`) kullanıldı; "paleti kullan" yalnızca ana ekran
+   widget'ları için geçerli.
+8. **`CompleteTaskIntent`** hem uygulama hem widget hedefinde derlenir. Gerçek depoda görevi tamamlar, bekleyen yerel
+   bildirimini silmeyi dener (`task.<uuid>`), `reloadAllTimelines()` çağırır. **Bilinmeyenler (cihazda denenmeli):**
+   intent'in widget mi uygulama sürecinde çalıştığı; uygulama arka plandan dönünce widget'tan tamamlanan görevin
+   (SwiftData uzak değişiklik birleştirmesi) Bugün ekranında hemen görünüp görünmediği; bildirimin silinmesi widget
+   sürecinde işe yarıyor mu. Yaramazsa, tamamlanmış görevin bildirimi uygulama bir sonraki açılışta/günlük yenilemede
+   yeniden hesaplanana kadar gelebilir.
+9. **Derin bağlantılar.** Şema `sahasatis` (`CFBundleURLTypes`): `task/<uuid>` (müşterisi varsa müşteri detayı, yoksa
+   Bugün — ayrı bir görev detay ekranı yok; bildirime dokunmayla aynı davranış), `today`, `visit/new` (uygulama
+   düzeyinde ziyaret formu sheet'i, `AppContext.presentVisitForm`). Ayrıştırma `WidgetLink` (testli).
+10. **App Group:** simülatörde/CI'da imzasız derlemede uygulama ve widget varsayılan konumları farklıdır, yani veri
+    paylaşımı **yalnızca imzalı cihaz derlemesinde** çalışır (`ModelConfiguration` varsayılan `groupContainer: .automatic`).
+    Gerçek paylaşım ancak Apple Developer hesabı ve App Group tanımlanınca doğrulanabilir.
+11. **Ekran görüntüleri:** `widget-today-medium[-empty][-dark]`, `widget-week-large[-dark]`, `widget-next-rect[-empty][-dark]`,
+    `widget-count-circular[-dark]` (test hedefi `ImageRenderer` ile, hayali örnek veri). Gerçek widget zeminini
+    (`containerBackground`) ve kilit ekranı boyamasını taklit eder; birebir sistem görünümü değildir.
+12. **Bilinçli olarak yapılmayanlar:** widget yapılandırması (hepsi `StaticConfiguration`), küçük (`systemSmall`)
+    widget, teklif tutarlarının tek para birimine çevrilmesi (para birimi başına ayrı gösterilir), tamamlanan görevin
+    widget'ta animasyonla kaybolması (sistem zaman çizelgesini yeniler).
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

@@ -4,6 +4,9 @@ import WidgetKit
 @main
 struct SahaSatisWidgetBundle: WidgetBundle {
     var body: some Widget {
-        HelloWidget()
+        TodayTasksWidget()
+        WeekWidget()
+        NextTaskWidget()
+        PendingCountWidget()
     }
 }

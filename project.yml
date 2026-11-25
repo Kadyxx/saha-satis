@@ -51,6 +51,11 @@ targets:
         NSMicrophoneUsageDescription: Ziyaret notlarını sesle kaydedebilmeniz için mikrofona erişim gerekir. Ses yalnızca konuşmayı metne çevirmek için kullanılır.
         NSSpeechRecognitionUsageDescription: Sesli ziyaret notunuzu Türkçe metne çevirmek için konuşma tanıma kullanılır.
         UILaunchScreen: {}
+        # Widget derin bağlantıları: sahasatis://task/<uuid>, sahasatis://today, sahasatis://visit/new
+        CFBundleURLTypes:
+          - CFBundleURLName: $(APP_BUNDLE_ID)
+            CFBundleURLSchemes:
+              - sahasatis
         # Günlük bildirim yenileme (BGAppRefreshTask). Kimlik BackgroundRefresh.identifier ile aynı: <bundle id>.refresh
         UIBackgroundModes:
           - fetch
@@ -104,9 +109,10 @@ targets:
   SahaSatisTests:
     type: bundle.unit-test
     platform: iOS
+    # Shared'ı derlemez: testler `@testable import SahaSatis` ile uygulamadaki tek kopyayı kullanır
+    # (@Model sınıfları iki modülde tanımlanırsa SwiftData çalışma zamanında çakışır).
     sources:
       - SahaSatisTests
-      - Shared
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).tests

@@ -65,7 +65,7 @@ enum ReminderPlanner {
             )
             guard fire > now else { continue }
             result.append(PlannedNotification(
-                id: "task.\(task.id.uuidString)",
+                id: TaskNotificationID.make(for: task.id),
                 kind: .task,
                 title: task.customerName ?? "Takip hatırlatması",
                 body: task.title,

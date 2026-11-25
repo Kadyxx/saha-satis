@@ -25,6 +25,11 @@ enum Theme {
     static let overdue = Color("overdue")
     static let done = Color("done")
 
+    // Kaydırma düğmeleri (swipeActions): sistem yazıyı hep beyaz çizer, yalnızca zemin rengi verilebilir.
+    // Beyaz yazı okunaklı olsun diye iki modda da koyu tonlar (≥ 6:1 kontrast).
+    static let swipeDone = Color("swipeDone")
+    static let swipePostpone = Color("swipePostpone")
+
     // Değerlendirme rozetleri (CustomerRating)
     static let ratingImportant = action
     static let ratingPromising = brand

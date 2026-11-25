@@ -85,7 +85,7 @@ Sekiz SwiftData modeli var; merkezde `Customer` durur, diğerleri ona bağlanır
 | `Customer` (Müşteri) | name, city (kullanıcının bölge listesinden; sabit kodlanmaz), district, industrialZone (OSB), sector, address, latitude, longitude, status (`current` / `potential` / `passive` → Mevcut / Aday / Pasif), rating (`important` / `promising` / `weak` → Önemli / Potansiyelli / Zayıf), ratingNote (kısa değerlendirme metni), notes, lastVisitDate (hesaplanan) | contacts, visits, opportunities, quotes, installedBase, tasks |
 | `Contact` (Kişi) | fullName, title, phone, email, notes, isPrimary | customer |
 | `InstalledProduct` (Kurulu baz) | catalogNumber (ör. 1756-L71), productFamily, quantity, lifecycleStatus (`active` / `activeMature` / `endOfLife` / `discontinued`), notes | customer |
-| `Visit` (Ziyaret) | date, type (`visit` / `phone` / `online`), transcript (ham ses metni), summary (düzenlenmiş not), topics, nextStep, nextStepDate, exportedToCRM (Bool), exportedAt | customer, contacts, opportunity? |
+| `Visit` (Ziyaret) | date, type (`visit` / `phone` / `online`), transcript (ham ses metni), summary (düzenlenmiş not), topic (konu: tek satır, isteğe bağlı), topics, nextStep, nextStepDate, exportedToCRM (Bool), exportedAt | customer, contacts, opportunity? |
 | `Opportunity` (Fırsat) | title, description, estimatedValue, currency, stage (`lead` / `qualified` / `quoted` / `negotiation` / `won` / `lost`), expectedCloseDate, lostReason | customer, quotes, visits |
 | `Quote` (Teklif) | quoteNumber, date, validUntil, currency, totalAmount (kalemlerden hesaplanır), status (`draft` / `sent` / `followUp` / `won` / `lost`), followUpDays (bu teklife özel; boşsa ayarlardaki varsayılan), notes | customer, opportunity?, items, tasks |
 | `QuoteItem` (Teklif kalemi) | catalogNumber, description, quantity, unitPrice, discountPercent, lineTotal (hesaplanan) | quote |
@@ -113,7 +113,7 @@ Beş sekme var: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar. Her yerde
 
 **3. Ziyaret kaydı**
 
-1. Müşteri seç (son ziyaret edilenler ve konuma en yakınlar üstte), kişileri işaretle.
+1. Müşteri seç (son ziyaret edilenler ve konuma en yakınlar üstte), kişileri işaretle. İsteğe bağlı tek satırlık "Konu" yaz; altında aynı müşterinin son 5 konusu öneri olarak çıkar, dokununca alana yazılır. Konu, ziyaret geçmişinde satır başlığıdır (boşsa notun ilk satırı) ve CRM raporundaki "Konu" satırıdır.
 2. Mikrofon butonu: konuşma canlı metne döner; duraklat/devam; metin düzenlenebilir.
 3. "Sonraki adım" ve tarih alanı (tarih seçilirse otomatik takip oluşur).
 4. İsteğe bağlı: fırsata bağla veya yeni fırsat aç.
@@ -124,7 +124,7 @@ Beş sekme var: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar. Her yerde
 - Bugün ekranında "Ziyaretleri CRM için gönder": seçilen günün (varsayılan bugün) aktarılmamış ziyaretleri tek e-postada.
 - Alıcı adresi ayarlardan; konu `Ziyaret Raporu – 24.11.2026`.
 - Gönderim sonrası ziyaretler `exportedToCRM = true` olur; tekrar göndermek mümkündür.
-- Her ziyaret ayrı blok, alanlar CRM'e tek tek yapıştırılacak sırada. Şablon ayarlardan değiştirilebilir; varsayılan:
+- Her ziyaret ayrı blok, alanlar CRM'e tek tek yapıştırılacak sırada:
 
 ```
 === ZIYARET 1 ===
@@ -176,7 +176,7 @@ Tüm hatırlatmalar `FollowUpTask` kayıtlarıdır; bildirimler bu kayıtlardan 
 - Bildirim aksiyonları: "Tamamlandı", "Yarına ertele". Bildirime dokununca ilgili kayıt açılır.
 - Hafta sonu bildirimi Ayarlar'dan kapatılabilir; kapalıysa Cumartesi/Pazar'a düşen görev Pazartesi'ye kayar.
 
-**Diğer ayarlar:** CRM e-posta alıcısı, dışa aktarma şablonu, varsayılan para birimi, iCloud senkron aç/kapa, verileri JSON olarak yedekle / geri yükle.
+**Diğer ayarlar:** CRM e-posta alıcısı, varsayılan para birimi, iCloud senkron aç/kapa, verileri JSON olarak yedekle / geri yükle.
 
 ## Widget'lar
 

@@ -3,6 +3,7 @@ import Observation
 
 /// Ekran görüntüsü/DEBUG için formu önceden dolduran başlangıç değerleri.
 struct VisitFormSeed {
+    var topic = ""
     var note = ""
     var nextStep = ""
     /// Bugünden kaç gün sonrasına takip tarihi konacağı (nil: tarih yok).
@@ -24,6 +25,8 @@ final class VisitFormModel {
     var selectedContactIDs: Set<UUID> = []
     var type: VisitType = .visit
     var date = Date()
+    /// Konu: tek satır, isteğe bağlı.
+    var topic = ""
     /// Düzenlenebilir görüşme notu; sesli not parçaları buraya eklenir.
     var note = ""
     var nextStep = ""
@@ -60,6 +63,7 @@ final class VisitFormModel {
         if let visit {
             type = visit.type
             date = visit.date
+            topic = visit.topic
             note = visit.summary
             rawTranscript = visit.transcript
             nextStep = visit.nextStep
@@ -70,6 +74,7 @@ final class VisitFormModel {
             reloadContacts()
             selectedContactIDs = Set((visit.contacts ?? []).map(\.id))
         } else {
+            topic = seed.topic
             note = seed.note
             nextStep = seed.nextStep
             if let days = seed.nextStepInDays {
@@ -108,6 +113,27 @@ final class VisitFormModel {
         }
     }
 
+    // MARK: - Konu önerileri
+
+    static let maxTopicSuggestions = 5
+
+    /// Aynı müşterinin son ziyaret konuları (en yeni önce, boşlar ve tekrarlar atılır, en çok 5). Düzenlenen
+    /// ziyaretin kendi konusu ve formdaki mevcut metinle aynı olanlar önerilmez.
+    var topicSuggestions: [String] {
+        guard let customer, let visits = try? repositories.visits.visits(for: customer) else { return [] }
+        let current = VisitText.singleLine(topic).lowercased()
+        var seen: Set<String> = [current]
+        var result: [String] = []
+        for visit in visits where visit.id != existingVisit?.id {
+            let text = VisitText.singleLine(visit.topic)
+            let key = text.lowercased()
+            guard !text.isEmpty, seen.insert(key).inserted else { continue }
+            result.append(text)
+            if result.count == Self.maxTopicSuggestions { break }
+        }
+        return result
+    }
+
     // MARK: - Sesli not
 
     /// Sesli not parçasını nota ve ham metne ekler.
@@ -127,6 +153,7 @@ final class VisitFormModel {
         var draft = VisitDraft()
         draft.date = date
         draft.type = type
+        draft.topic = VisitText.singleLine(topic)
         draft.summary = note.trimmingCharacters(in: .whitespacesAndNewlines)
         draft.transcript = rawTranscript
         draft.nextStep = nextStep.trimmingCharacters(in: .whitespacesAndNewlines)

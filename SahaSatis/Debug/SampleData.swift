@@ -31,6 +31,7 @@ enum SampleData {
         try visitService.save(
             VisitDraft(
                 date: daysAgo(80), type: .visit,
+                topic: "Bakım sözleşmesi tanıtımı",
                 summary: "Yıllık bakım sözleşmesi tanıtıldı. Satın alma süreci ve onay adımları anlatıldı.",
                 nextStep: "Bakım sözleşmesi örneği gönderilecek"
             ),
@@ -39,6 +40,7 @@ enum SampleData {
         try visitService.save(
             VisitDraft(
                 date: daysAgo(34), type: .phone,
+                topic: "Yedek parça stoğu",
                 summary: "Yedek parça stok durumu soruldu; fiyat listesi e-postayla gönderildi."
             ),
             customer: ornek, contacts: [ahmet], existing: nil
@@ -46,6 +48,7 @@ enum SampleData {
         try visitService.save(
             VisitDraft(
                 date: daysAgo(12), type: .visit,
+                topic: "Hat 3 PLC yenileme",
                 summary: "Hat 3 PLC yenilemesi görüşüldü. Eski denetleyicilerin yedek parça sorunu var; teklif istediler.",
                 nextStep: "Hat 3 için teklif hazırlanacak",
                 nextStepDate: now.addingTimeInterval(3 * 86_400)
@@ -146,7 +149,7 @@ enum SampleData {
                 Visit(
                     date: at(0, 11, 15), type: .phone,
                     summary: "Teklif kapsamı telefonda netleştirildi.\nHat 3 için 2 adet ControlLogix işlemci ve G/Ç modülleri istendi.\nTeslim süresi ve bakım sözleşmesi ayrıca konuşulacak.",
-                    topics: ["Hat 3 PLC yenileme"],
+                    topic: "Hat 3 teklif kapsamı",
                     nextStep: "Hat 3 için teklif hazırlanacak",
                     nextStepDate: at(3, 9)
                 ),

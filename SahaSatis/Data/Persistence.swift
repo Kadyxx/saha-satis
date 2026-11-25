@@ -36,3 +36,16 @@ extension ModelContext {
         try fetch(FetchDescriptor<T>())
     }
 }
+
+extension Notification.Name {
+    /// Repository'ler her başarılı kayıttan sonra bunu yayınlar; hatırlatma motoru ve Bugün ekranı yenilenir.
+    static let appDataDidChange = Notification.Name("SahaSatis.appDataDidChange")
+}
+
+extension ModelContext {
+    /// `save()` + "veri değişti" bildirimi. Repository'ler `save()` yerine bunu kullanır.
+    func saveAndNotify() throws {
+        try save()
+        NotificationCenter.default.post(name: .appDataDidChange, object: nil)
+    }
+}

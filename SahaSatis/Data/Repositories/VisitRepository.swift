@@ -62,17 +62,17 @@ final class SwiftDataVisitRepository: VisitRepository {
         visit.customer = customer
         visit.contacts = contacts
         visit.opportunity = opportunity
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ visit: Visit) throws {
         visit.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ visit: Visit) throws {
         context.delete(visit)
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func markExported(_ visits: [Visit], at date: Date) throws {
@@ -81,6 +81,6 @@ final class SwiftDataVisitRepository: VisitRepository {
             visit.exportedAt = date
             visit.updatedAt = Date()
         }
-        try context.save()
+        try context.saveAndNotify()
     }
 }

@@ -78,30 +78,30 @@ final class SwiftDataFollowUpTaskRepository: FollowUpTaskRepository {
         task.customer = customer
         task.quote = quote
         task.visit = visit
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ task: FollowUpTask) throws {
         task.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ task: FollowUpTask) throws {
         context.delete(task)
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func complete(_ task: FollowUpTask, at date: Date) throws {
         task.isDone = true
         task.doneAt = date
         task.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func postpone(_ task: FollowUpTask, to newDueDate: Date) throws {
         task.dueDate = newDueDate
         task.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func cancelOpenTasks(for quote: Quote) throws {
@@ -109,6 +109,6 @@ final class SwiftDataFollowUpTaskRepository: FollowUpTaskRepository {
         for task in pending {
             context.delete(task)
         }
-        try context.save()
+        try context.saveAndNotify()
     }
 }

@@ -51,6 +51,11 @@ targets:
         NSMicrophoneUsageDescription: Ziyaret notlarını sesle kaydedebilmeniz için mikrofona erişim gerekir. Ses yalnızca konuşmayı metne çevirmek için kullanılır.
         NSSpeechRecognitionUsageDescription: Sesli ziyaret notunuzu Türkçe metne çevirmek için konuşma tanıma kullanılır.
         UILaunchScreen: {}
+        # Günlük bildirim yenileme (BGAppRefreshTask). Kimlik BackgroundRefresh.identifier ile aynı: <bundle id>.refresh
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - $(APP_BUNDLE_ID).refresh
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         ITSAppUsesNonExemptEncryption: false
@@ -119,5 +124,8 @@ schemes:
       config: Debug
     test:
       config: Debug
+      # Test sırasında uygulama (host) bildirim izni istemesin / gerçek bildirim planlamasın.
+      commandLineArguments:
+        "-DebugNoNotifications": true
       targets:
         - SahaSatisTests

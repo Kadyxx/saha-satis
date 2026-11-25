@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UserNotifications
 
 @main
 struct SahaSatisApp: App {
@@ -17,14 +18,25 @@ struct SahaSatisApp: App {
             #if DEBUG
             if useSampleData {
                 try SampleData.load(into: repositories)
+                if DebugLaunch.scene == .today || DebugLaunch.scene == .todayForm {
+                    try SampleData.loadTodayShowcase(into: repositories)
+                }
             }
             #endif
             self.container = container
-            self.context = AppContext(
+            let notificationScheduler: NotificationScheduling = DebugLaunch.skipNotifications
+                ? NullNotificationScheduler()
+                : SystemNotificationScheduler()
+            let context = AppContext(
                 repositories: repositories,
                 settings: DebugLaunch.makeSettings(),
-                makeSpeechEngine: DebugLaunch.speechEngineFactory()
+                makeSpeechEngine: DebugLaunch.speechEngineFactory(),
+                notificationScheduler: notificationScheduler
             )
+            if !DebugLaunch.skipNotifications {
+                UNUserNotificationCenter.current().delegate = context.notificationResponder
+            }
+            self.context = context
         } catch {
             fatalError("Veri deposu açılamadı: \(error)")
         }
@@ -40,5 +52,11 @@ struct SahaSatisApp: App {
             .environmentObject(context)
         }
         .modelContainer(container)
+        // Günde bir kez arka planda bildirimleri yeniden hesapla (sistem çalıştırmayı garanti etmez;
+        // açılış ve veri değişimi asıl tetikleyicilerdir).
+        .backgroundTask(.appRefresh(BackgroundRefresh.identifier)) {
+            BackgroundRefresh.schedule()
+            await context.reminders.refresh()
+        }
     }
 }

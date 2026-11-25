@@ -97,5 +97,59 @@ enum SampleData {
         try repositories.contacts.add(Contact(fullName: "Elif Şahin", title: "Proje Mühendisi", phone: "0555 000 00 04", email: "elif@example.com"), to: otomotiv)
         try repositories.visits.add(Visit(date: daysAgo(3)), customer: otomotiv, contacts: [], opportunity: nil)
     }
+
+    /// Bugün ekranı görüntüleri için: gecikmiş / bugün / yarın takipleri ve bugünkü ziyaretler (hayali).
+    /// `load(into:)` çağrıldıktan sonra kullanılır; yalnızca `-DebugScene today|todayForm` ile yüklenir.
+    @MainActor
+    static func loadTodayShowcase(into repositories: Repositories, now: Date = Date(), calendar: Calendar = .current) throws {
+        let customers = try repositories.customers.fetchAll()
+        func customer(_ name: String) -> Customer? { customers.first { $0.name == name } }
+        func at(_ dayOffset: Int, _ hour: Int, _ minute: Int = 0) -> Date {
+            let day = calendar.date(byAdding: .day, value: dayOffset, to: now) ?? now
+            return calendar.date(bySettingHour: hour, minute: minute, second: 0, of: day) ?? day
+        }
+        func task(_ title: String, _ due: Date, _ source: TaskSource, _ customerName: String) throws {
+            try repositories.tasks.add(
+                FollowUpTask(title: title, dueDate: due, source: source),
+                customer: customer(customerName), quote: nil, visit: nil
+            )
+        }
+
+        let ornek = "Örnek Makina A.Ş."
+        let marmara = "Marmara Gıda San. Tic. Ltd. Şti."
+        let kuzey = "Kuzey Tekstil A.Ş."
+        let anadolu = "Anadolu Seramik San. A.Ş."
+        let deniz = "Deniz Otomotiv Yan Sanayi A.Ş."
+
+        // Gecikmiş
+        try task("Bakım sözleşmesi örneğini gönder", at(-2, 9), .visitNextStep, ornek)
+        try task("Fiyat listesi güncellemesini ilet", at(-1, 14), .manual, marmara)
+        // Bugün
+        try task(VisitFrequencyService.taskTitle, at(0, 9), .visitFrequency, anadolu)
+        try task("Hat 3 teklifini hazırla", at(0, 10, 30), .manual, ornek)
+        try task("Satın alma ile telefon görüşmesi", at(0, 16), .manual, deniz)
+        // Yarın
+        try task("Numune ürün listesini gönder", at(1, 9), .manual, marmara)
+        try task("Kuzey Tekstil'i ara", at(1, 11), .manual, kuzey)
+
+        // Bugünkü ziyaretler: biri CRM'e aktarılmış, ikisi aktarılmamış
+        if let c = customer(deniz) {
+            let exported = Visit(date: at(0, 8, 30), type: .visit, summary: "Robot hücresi sürücü ihtiyacı görüşüldü.")
+            try repositories.visits.add(exported, customer: c, contacts: [], opportunity: nil)
+            try repositories.visits.markExported([exported], at: now)
+        }
+        if let c = customer(ornek) {
+            try repositories.visits.add(
+                Visit(date: at(0, 11, 15), type: .phone, summary: "Teklif kapsamı telefonda netleştirildi."),
+                customer: c, contacts: [], opportunity: nil
+            )
+        }
+        if let c = customer(marmara) {
+            try repositories.visits.add(
+                Visit(date: at(0, 13, 45), type: .visit, summary: "Dolum hattı yatırımı için yerinde keşif."),
+                customer: c, contacts: [], opportunity: nil
+            )
+        }
+    }
 }
 #endif

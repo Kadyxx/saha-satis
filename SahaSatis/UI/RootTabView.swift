@@ -10,6 +10,8 @@ struct RootTabView: View {
     let settings: AppSettings
     let debugScene: DebugScene?
 
+    @EnvironmentObject private var context: AppContext
+    @Environment(\.scenePhase) private var scenePhase
     @State private var selection: AppTab
 
     init(repositories: Repositories, settings: AppSettings, debugScene: DebugScene? = nil) {
@@ -24,16 +26,13 @@ struct RootTabView: View {
         case nil: return .today
         case .settings, .settingsReminders, .settingsCities: return .settings
         case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory: return .customers
+        case .today, .todayForm: return .today
         }
     }
 
     var body: some View {
         TabView(selection: $selection) {
-            PlaceholderView(
-                title: "Bugün",
-                systemImage: "sun.max",
-                message: "Gecikmiş ve bugünkü takipleriniz burada görünecek."
-            )
+            TodayView(repositories: repositories, reminders: context.reminders, debugScene: debugScene)
             .tabItem { Label("Bugün", systemImage: "sun.max") }
             .tag(AppTab.today)
 
@@ -66,5 +65,25 @@ struct RootTabView: View {
         // Arayüz dili Türkçe: sistemin otomatik büyük harf dönüşümü (bölüm başlıkları vb.) tr_TR ile yapılsın
         // ("Kişiler" → "KİŞİLER").
         .environment(\.locale, AppFormat.locale)
+        // Hatırlatma motoru: açılışta izin + planlama; öne gelince yeniden planla; arka plana giderken
+        // günlük yenileme isteği ver (DEBUG ekran görüntülerinde kapalı).
+        .task { await context.reminders.start() }
+        .onChange(of: scenePhase) {
+            guard !DebugLaunch.skipNotifications else { return }
+            switch scenePhase {
+            case .active: Task { await context.reminders.refresh() }
+            case .background: BackgroundRefresh.schedule()
+            default: break
+            }
+        }
+        // Bildirime dokunma / Bugün satırı: istenen sekmeye geç.
+        .onChange(of: context.requestedTab) { showRequestedTab() }
+        .onAppear { showRequestedTab() }
+    }
+
+    private func showRequestedTab() {
+        guard let tab = context.requestedTab else { return }
+        selection = tab
+        context.requestedTab = nil
     }
 }

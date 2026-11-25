@@ -5,7 +5,7 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'claude/**']
   pull_request:
   workflow_dispatch:
 
@@ -65,7 +65,7 @@ jobs:
           APP=$(find build/DerivedData/Build/Products -name 'SahaSatis.app' -maxdepth 2 | head -1)
           BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Info.plist")
           xcrun simctl install "$UDID" "$APP"
-          xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppleLanguages "(tr)" -AppleLocale tr_TR
+          xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppleLanguages "(tr)" -AppleLocale tr_TR -DebugNoNotifications
           sleep 5
           xcrun simctl io "$UDID" screenshot artifacts/screenshots/app.png
           xcrun simctl ui "$UDID" appearance dark
@@ -75,7 +75,7 @@ jobs:
           xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
 
           # Müşteri ekranları: yalnızca DEBUG derlemesinde, bellek içi hayali örnek veriyle.
-          for scene in customers detail form settings settingsReminders settingsCities visitForm visitRecording visitHistory; do
+          for scene in customers detail form settings settingsReminders settingsCities visitForm visitRecording visitHistory today todayForm; do
             for mode in light dark; do
               xcrun simctl ui "$UDID" appearance "$mode"
               xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppleLanguages "(tr)" -AppleLocale tr_TR -DebugSampleData -DebugScene "$scene"

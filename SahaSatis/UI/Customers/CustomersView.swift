@@ -79,7 +79,11 @@ struct CustomersView: View {
                 Text(model.errorMessage ?? "")
             }
         }
-        .onAppear { model.reload() }
+        .onAppear {
+            model.reload()
+            openRequestedCustomer()
+        }
+        .onChange(of: appContext.customerToOpen) { openRequestedCustomer() }
         .onChange(of: model.filter) { model.reload() }
         .task { await runDebugSceneIfNeeded() }
     }
@@ -148,6 +152,15 @@ struct CustomersView: View {
 
     // MARK: - İşlemler
 
+    /// Bildirime dokunma veya Bugün satırı bir müşteri istediyse detayını açar.
+    private func openRequestedCustomer() {
+        guard let id = appContext.customerToOpen else { return }
+        appContext.customerToOpen = nil
+        guard let customer = try? repositories.customers.customer(id: id) else { return }
+        path = NavigationPath()
+        path.append(customer)
+    }
+
     private var errorBinding: Binding<Bool> {
         Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
     }
@@ -174,7 +187,7 @@ struct CustomersView: View {
         model.reload()
         let showcase = model.customers.first { $0.name == "Örnek Makina A.Ş." } ?? model.customers.first
         switch scene {
-        case .customers, .settings, .settingsReminders, .settingsCities:
+        case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm:
             break
         case .detail, .visitHistory:
             if let showcase { path.append(showcase) }

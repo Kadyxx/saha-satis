@@ -13,6 +13,15 @@ enum AppFormat {
         return formatter.string(from: date)
     }
 
+    /// "14:30"
+    static func time(_ date: Date, timeZone: TimeZone = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeZone = timeZone
+        formatter.setLocalizedDateFormatFromTemplate("HHmm")
+        return formatter.string(from: date)
+    }
+
     /// "21 Kas 2026 14:30"
     static func dateTime(_ date: Date, timeZone: TimeZone = .current) -> String {
         let formatter = DateFormatter()

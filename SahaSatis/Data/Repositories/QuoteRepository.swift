@@ -45,22 +45,22 @@ final class SwiftDataQuoteRepository: QuoteRepository {
         context.insert(quote)
         quote.customer = customer
         quote.opportunity = opportunity
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ quote: Quote) throws {
         quote.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ quote: Quote) throws {
         context.delete(quote)
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func setStatus(_ quote: Quote, to status: QuoteStatus) throws {
         quote.status = status
         quote.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 }

@@ -43,16 +43,16 @@ final class SwiftDataInstalledProductRepository: InstalledProductRepository {
         if product.ownerUserID.isEmpty { product.ownerUserID = ownerUserID }
         context.insert(product)
         product.customer = customer
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ product: InstalledProduct) throws {
         product.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ product: InstalledProduct) throws {
         context.delete(product)
-        try context.save()
+        try context.saveAndNotify()
     }
 }

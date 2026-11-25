@@ -94,17 +94,17 @@ final class SwiftDataCustomerRepository: CustomerRepository {
     func add(_ customer: Customer) throws {
         if customer.ownerUserID.isEmpty { customer.ownerUserID = ownerUserID }
         context.insert(customer)
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ customer: Customer) throws {
         customer.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ customer: Customer) throws {
         context.delete(customer)
-        try context.save()
+        try context.saveAndNotify()
     }
 
     // MARK: - Yardımcılar

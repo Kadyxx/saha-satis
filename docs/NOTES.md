@@ -80,3 +80,8 @@ Giriş (Sign in with Apple), iCloud senkronu, ekranlar ve hatırlatma motoru **y
   Ders: yeni klasör eklerken `git status` / `git ls-files` ile dosyaların gerçekten izlendiği kontrol edilmeli.
 - CI runner'ı `macos-15-intel`: arm64 macOS havuzunda kapasite olmadığı için (iş 15+ dk atanamadı) geçildi.
   Arm64 kapasitesi düzelirse `macos-15`'e dönülebilir.
+- Ana gezinme ve müşteri ekranları tamamlandı, CI ilk denemede yeşil (52 test; 12 ekran görüntüsü artifact'te:
+  `screen-{customers,detail,form}-{light,dark}.png`, `app*.png`, `widget-*.png`). Görüntüler elle incelendi:
+  renkler, rozetler, kişi düğmeleri ve Türkçe karakterler doğru. Not: simülatörün yereli İngilizce olduğu için
+  "Son ziyaret" tarihi `Nov 21, 2026` biçiminde görünüyor; Türkçe cihazda yerel biçimle gösterilir.
+- Bu noktada duruldu; sıradaki iş için yeni talimat bekleniyor.

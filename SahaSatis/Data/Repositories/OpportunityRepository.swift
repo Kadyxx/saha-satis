@@ -45,23 +45,23 @@ final class SwiftDataOpportunityRepository: OpportunityRepository {
         if opportunity.ownerUserID.isEmpty { opportunity.ownerUserID = ownerUserID }
         context.insert(opportunity)
         opportunity.customer = customer
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ opportunity: Opportunity) throws {
         opportunity.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ opportunity: Opportunity) throws {
         context.delete(opportunity)
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func setStage(_ opportunity: Opportunity, to stage: OpportunityStage, lostReason: String?) throws {
         opportunity.stage = stage
         opportunity.lostReason = stage == .lost ? (lostReason ?? "") : ""
         opportunity.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 }

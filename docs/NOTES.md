@@ -158,6 +158,88 @@ Giriş (Sign in with Apple), iCloud senkronu, ekranlar ve hatırlatma motoru **y
     gönderir: "Dinleniyor…" + Duraklat/Bitir), `visitHistory` (detay, ziyaret geçmişine kaydırılmış). Örnek veride
     Örnek Makina için 3 ziyaret (80/34/12 gün önce) ve 1 bağlı takip görevi var.
 
+## Bugün ekranı ve hatırlatma motoru — kararlar
+
+**CI:** `build.yml` yalnızca `main` push'unda ve pull request'te çalışıyordu; bu branch'e push CI tetiklemiyordu.
+`push` artık `[main, 'claude/**']`. (Aynı commit hem push hem PR'da çalışabilir; `concurrency` ref başına olduğu için
+ikisi de koşar, kabul ettim.)
+
+1. **Katmanlar.** Saf mantık ayrı, sistem katmanı ince: `ReminderPlanner` (Foundation'dan başka bağımlılığı yok:
+   görev anlık görüntüleri + ayar anlık görüntüsü + `now` + `Calendar` → `[PlannedNotification]`), `ReminderScheduler`
+   (SwiftData'dan okur, planlayıcıyı çağırır, sonucu `NotificationScheduling`'e verir), `SystemNotificationScheduler`
+   (`UNUserNotificationCenter`), `NullNotificationScheduler` (DEBUG), `MockNotificationScheduler` (testler).
+2. **Tetikleyiciler.** (a) uygulama açılışı (`RootTabView.task` → `start()`: izin iste, dinlemeye başla, hesapla),
+   (b) sahneye dönüş (`scenePhase == .active`), (c) **her veri değişikliği**: repository'lerin 25 `context.save()`
+   çağrısı `context.saveAndNotify()` oldu; kayıttan sonra `.appDataDidChange` yayınlanır, motor 500 ms bekleyip tek
+   hesaplama yapar (art arda kayıtlar birleşir), (d) ayar değişikliği (`AppSettings.objectWillChange`),
+   (e) `BGAppRefreshTask`: `.backgroundTask(.appRefresh)` sahne değiştiricisi; istek uygulama arka plana giderken ve
+   her çalışmanın sonunda bir sonraki sabah 05:00'e kurulur. `Info.plist`: `UIBackgroundModes: fetch`,
+   `BGTaskSchedulerPermittedIdentifiers: <bundle id>.refresh`. **Sistem çalıştırmayı garanti etmez, simülatörde hiç
+   çalışmaz**; asıl tetikleyiciler a–d, günlük yenileme yedektir. Bir hesaplamanın kendi yazdığı görevler yeni bir
+   hesaplamayı tetikler; ikinci hesaplama bir şey yazmadığı için döngü orada biter (ziyaret sıklığı eşitlemesi
+   değişmezdir). Hesaplamalar `inFlight` ile sıraya girer (iki `replaceAll` iç içe geçmesin).
+3. **64 sınırı.** Her seferinde bekleyen TÜM bildirimler silinir; görev bildirimleri + sabah özetleri + gün sonu
+   tek listede zamana göre sıralanıp ilk 64'ü planlanır (`ReminderPlanner.maxPendingNotifications`).
+   Kimlikler kararlıdır (`task.<uuid>`, `summary.2026-11-25`, `endofday.2026-11-25`); bu yüzden
+   `FollowUpTask.notificationID` alanına **yazılmıyor** (her hesaplamada tüm görevlere yazmak CloudKit'te gürültü
+   olurdu). Alan şimdilik kullanılmıyor.
+4. **Geçmişte kalan** görevlerin (vade saati geçmiş) kendi bildirimi planlanmaz; gecikmişler sabah özetinde sayılır.
+5. **Sabah özeti** önümüzdeki 7 gün için, **yalnızca söylenecek bir şeyi olan** iş günleri için planlanır. Bildirim
+   içeriği önceden hesaplanmak zorunda olduğundan (tekrarlı bildirim dinamik metin taşıyamaz) metin planlama anındaki
+   veriden gelir: "Bugün 3 takip, 2 gecikmiş". Sayım ham vade gününe göredir (hafta sonu kaydırması sayımı
+   değiştirmez), bu yüzden Bugün ekranıyla aynı sonucu verir. İleri günlerdeki "gecikmiş", o gün öncesi vadeli ve hâlâ
+   açık görevlerdir; görev tamamlanınca yeniden hesaplama bunu düzeltir.
+6. **Gün sonu hatırlatması** yalnızca **bugün** için planlanır (aktarılmamış ziyaret sayısı önceden bilinemez): bugün
+   aktarılmamış ziyaret varsa ve saat geçmediyse. Ziyaret kaydedilince / aktarılınca yeniden hesaplama eklenir/kaldırır.
+   Önceki günlerin aktarılmamış ziyaretleri şimdilik ne ekranda ne hatırlatmada sayılıyor (SPEC "Bugün yapılan
+   ziyaretler" diyor); gün sonu e-posta akışı yapılırken yeniden bakılmalı.
+7. **Hafta sonu.** Kapalıyken (varsayılan) Cumartesi/Pazar'a düşen görevin **bildirimi** Pazartesi'ye kayar, saat
+   korunur. Görevin kendisi (`dueDate`) değiştirilmez; Bugün ekranı ham tarihe göre gruplar, yani Cumartesi görevi
+   Pazartesi sabahı "Gecikmiş"te görünür ve aynı sabah bildirimi gelir. Sabah özeti ve gün sonu da hafta sonu atlanır.
+   Hafta günü kontrolü `Calendar.component(.weekday)` ile (1 = Pazar, 7 = Cumartesi), bölgeye bağlı `isDateInWeekend` değil.
+8. **Ziyaret sıklığı (`VisitFrequencyService`).** Her hesaplamadan önce çalışır, müşteri başına en çok bir açık görev:
+   - Vade = referans günü + değerlendirme eşiği (Ayarlar: 30/60/120), hatırlatma saatinde. Referans = son ziyaret
+     (yoksa müşterinin eklenme tarihi) ile en son tamamlanan sıklık görevinin `doneAt`'inden yeni olan. Böylece
+     "Tamamlandı" denince görev hemen geri gelmez, sayaç yeniden başlar.
+   - Eşik çoktan geçmişse vade **bugünün hatırlatma saatine çekilir** (ilk açılışta yüzlerce eski "gecikmiş" olmasın).
+   - **Pasif müşteride görev tutulmaz** (SPEC söylemiyor; pasif müşteriyi ziyaret etmek istenmez), açık olanlar silinir.
+   - Var olan açık görev **bir daha değiştirilmez** (kullanıcı ertelemiş olabilir). Sonuç: değerlendirme veya eşik
+     sonradan değişirse mevcut açık görevin tarihi eski eşiğe göre kalır; sonraki görev yeni eşikle kurulur.
+   - Başlık "Ziyaret zamanı geldi", müşteri adı satırda/bildirim başlığında. Yeni ziyaret girilince `VisitService`
+     açık görevi kapatır (önceden vardı); bir sonraki hesaplama yenisini ziyaret tarihinden kurar. Geriye dönük tarihli
+     ziyarette kapanış `doneAt = şimdi` olduğundan referans ziyaret tarihinden biraz ileri kayabilir (en çok o kadar gün).
+9. **Bugün ekranı.** Gruplar gün bazlı: vadesi bugün olan görev saati geçse de "Bugün"; "Gecikmiş" vade günü geçince.
+   Yarından sonrası listelenmez. Üstte bugünkü ziyaretler (tür, saat, aktarıldı/aktarılmadı simgesi) ve "N ziyaret
+   CRM'e aktarılmadı" satırı. Satıra dokunmak müşteri detayını açar (`AppContext.open(customer:)` → Müşteriler sekmesi).
+   Sola kaydırma: Tamamlandı (tam kaydırma) ve Ertele. Ertele bir `confirmationDialog` açar (1 gün, 3 gün, 1 hafta,
+   Tarih seç…); `Menu` swipe action içinde güvenilir olmadığı için kullanılmadı. Kaydırma düğmesi yazıları sistemin
+   beyazı: turkuaz/turuncu zeminde palet kuralı (`onBrand`/`onAction`) uygulanamıyor — **elle bakılmalı**.
+   Sağ üstte "+" ile manuel takip formu (başlık, isteğe bağlı müşteri, tarih+saat; varsayılan bir sonraki hatırlatma
+   saati). İzin reddedilmişse listenin başında "Bildirimler kapalı" uyarısı ve Ayarlar bağlantısı.
+10. **Ertele kuralı (`PostponeRule`).** Görevin saati korunur, yalnızca gün değişir. `N gün`: gecikmiş/bugünkü
+    görevler bugünden, ileri tarihli görevler kendi gününden sayar (yoksa gecikmiş görev "1 gün" ile hâlâ geçmişte
+    kalırdı). "Tarih seç": seçilen gün. Bildirimdeki "Yarına ertele" = `N gün (1)`.
+11. **Bildirim aksiyonları.** Kategori `task`: "Tamamlandı", "Yarına ertele" (uygulamayı açmaz). Sabah özeti ve gün sonu
+    aksiyonsuz. Bildirime dokununca: görevin müşterisi varsa Müşteriler sekmesinde detay, yoksa Bugün.
+    `NotificationResponder` uygulama açıkken de afiş gösterir (`willPresent`). Temsilci `UNUserNotificationCenter`'da
+    zayıf tutulduğu için `AppContext` saklar.
+12. **İzin.** İlk açılışta bir kez istenir (`.alert, .sound`; rozet yok). Reddedilirse yeniden sorulmaz, Bugün'de uyarı.
+13. **DEBUG / CI.** `-DebugSampleData` veya `-DebugNoNotifications` ile bildirim izni istenmez ve sisteme hiçbir şey
+    planlanmaz (izin penceresi ekran görüntüsünü kapatırdı). CI'daki düz `app.png` açılışına ve test şemasına
+    (`commandLineArguments`) `-DebugNoNotifications` verildi. Yeni senaryolar: `today`, `todayForm`;
+    `SampleData.loadTodayShowcase` yalnızca bunlarda yüklenir (hayali: 2 gecikmiş, 3 bugün, 2 yarın takibi; 3 bugünkü
+    ziyaret, biri aktarılmış). Görüntüler: `screen-today-{light,dark}.png`, `screen-todayForm-{light,dark}.png`.
+14. **Bilinçli olarak yapılmayanlar:** teklif takip/geçerlilik ve fırsat kapanış görevlerini üreten kurallar (Faz 2),
+    "Ziyaretleri CRM için gönder" akışı, widget'ların `reloadAllTimelines()` çağrısı (`appDataDidChange` bunun için de
+    uygun tek nokta), görev bazında bildirim saati değiştirme (görev saati formda değiştirilebiliyor, mevcut görevin
+    saatini düzenleme ekranı yok), Bugün'den görev silme/düzenleme.
+
+**Elle denenmesi gerekenler (gerçek iPhone):** izin penceresi, bildirimin doğru saatte gelmesi, bildirimdeki
+Tamamlandı / Yarına ertele aksiyonları (uygulama kapalıyken de), bildirime dokununca müşteri detayının açılması,
+hafta sonu kaydırma, kaydırma düğmesi görünümü, `BGAppRefreshTask` (Xcode'dan `e -l objc -- (void)[[BGTaskScheduler
+sharedScheduler] _simulateLaunchForTaskWithIdentifier:@"<bundle id>.refresh"]` ile tetiklenebilir; Xcode kullanılamadığı
+için yalnızca ertesi sabah bildirimlerin güncel olup olmadığına bakılabilir).
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

@@ -14,6 +14,8 @@ enum DebugScene: String {
     case visitForm
     case visitRecording
     case visitHistory
+    case today
+    case todayForm
 }
 
 enum DebugLaunch {
@@ -25,6 +27,12 @@ enum DebugLaunch {
         arguments.contains("-DebugSampleData")
     }
 
+    /// Örnek veri modunda veya `-DebugNoNotifications` ile: bildirim izni istenmez, sisteme hiçbir şey planlanmaz
+    /// (izin penceresi ekran görüntülerini kapatmasın).
+    static var skipNotifications: Bool {
+        useSampleData || arguments.contains("-DebugNoNotifications")
+    }
+
     static var scene: DebugScene? {
         guard let index = arguments.firstIndex(of: "-DebugScene"), index + 1 < arguments.count else { return nil }
         return DebugScene(rawValue: arguments[index + 1])
@@ -32,6 +40,7 @@ enum DebugLaunch {
     #else
     static var useSampleData: Bool { false }
     static var scene: DebugScene? { nil }
+    static var skipNotifications: Bool { false }
     #endif
 
     /// Konuşma tanıma motoru üreticisi. Örnek veri modunda (simülatörde mikrofon yok) canlı metin gösteren

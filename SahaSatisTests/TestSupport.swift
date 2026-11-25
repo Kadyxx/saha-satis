@@ -39,7 +39,7 @@ enum TestCalendar {
         return calendar
     }()
 
-    static func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int = 12) -> Date {
-        utc.date(from: DateComponents(year: year, month: month, day: day, hour: hour))!
+    static func date(_ year: Int, _ month: Int, _ day: Int, _ hour: Int = 12, _ minute: Int = 0) -> Date {
+        utc.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute))!
     }
 }

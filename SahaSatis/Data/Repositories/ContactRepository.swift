@@ -47,17 +47,17 @@ final class SwiftDataContactRepository: ContactRepository {
         } else if contact.isPrimary {
             existing.forEach { $0.isPrimary = false }
         }
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ contact: Contact) throws {
         contact.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ contact: Contact) throws {
         context.delete(contact)
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func setPrimary(_ contact: Contact) throws {
@@ -68,6 +68,6 @@ final class SwiftDataContactRepository: ContactRepository {
         }
         contact.isPrimary = true
         contact.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 }

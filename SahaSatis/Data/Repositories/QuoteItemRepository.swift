@@ -36,19 +36,19 @@ final class SwiftDataQuoteItemRepository: QuoteItemRepository {
         context.insert(item)
         item.quote = quote
         quote.updatedAt = Date()
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func update(_ item: QuoteItem) throws {
         let now = Date()
         item.updatedAt = now
         item.quote?.updatedAt = now
-        try context.save()
+        try context.saveAndNotify()
     }
 
     func delete(_ item: QuoteItem) throws {
         item.quote?.updatedAt = Date()
         context.delete(item)
-        try context.save()
+        try context.saveAndNotify()
     }
 }

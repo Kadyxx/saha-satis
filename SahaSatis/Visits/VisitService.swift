@@ -4,6 +4,8 @@ import Foundation
 struct VisitDraft: Equatable {
     var date = Date()
     var type: VisitType = .visit
+    /// Konu (tek satır, isteğe bağlı).
+    var topic = ""
     /// Düzenlenmiş görüşme notu (`Visit.summary`).
     var summary = ""
     /// Ham ses metni (`Visit.transcript`); yalnızca sesli not kullanıldıysa dolu.
@@ -60,6 +62,7 @@ struct VisitService {
         visit.type = draft.type
         visit.transcript = draft.transcript
         visit.summary = draft.summary
+        visit.topic = draft.topic
         visit.nextStep = draft.nextStep
         visit.nextStepDate = draft.nextStepDate
     }

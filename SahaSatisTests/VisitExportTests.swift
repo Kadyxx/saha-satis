@@ -290,7 +290,7 @@ final class VisitExportModelTests: XCTestCase {
         XCTAssertFalse(text.contains("Atlanacak"))
     }
 
-    func testItemMapsVisitFieldsContactsTopicsAndOpportunityFallback() throws {
+    func testItemMapsVisitFieldsContactsAndTopic() throws {
         let env = try TestEnv()
         let customer = try env.makeCustomer("Örnek Makina A.Ş.", city: "Bursa")
         customer.district = "Nilüfer"
@@ -309,13 +309,27 @@ final class VisitExportModelTests: XCTestCase {
         XCTAssertEqual(mapped.district, "Nilüfer")
         XCTAssertEqual(mapped.typeTitle, "Telefon")
         XCTAssertEqual(mapped.contacts.map(\.name), ["Zeynep Kaya", "Ahmet Yılmaz", "Ayşe Demir"], "Önce birincil kişi, sonra ada göre")
-        XCTAssertEqual(mapped.topic, "Hat 3 PLC yenileme", "Konu yoksa bağlı fırsatın başlığı")
+        XCTAssertEqual(mapped.topic, "", "Konu alanı boşsa bağlı fırsatın başlığı kullanılmaz")
 
-        visit.topics = ["Yedek parça", "Bakım sözleşmesi"]
+        visit.topic = "Hat 3 PLC yenileme"
         mapped = VisitExportItem(visit: visit)
-        XCTAssertEqual(mapped.topic, "Yedek parça, Bakım sözleşmesi")
+        XCTAssertEqual(mapped.topic, "Hat 3 PLC yenileme")
         XCTAssertEqual(mapped.note, "Not")
         XCTAssertEqual(mapped.nextStep, "Teklif")
+    }
+
+    func testReportTopicLineComesFromTheTopicField() throws {
+        let env = try TestEnv()
+        let customer = try env.makeCustomer()
+        let withTopic = Visit(date: TestCalendar.date(2026, 11, 24, 9), summary: "Not", topic: "Yedek parça stoğu")
+        let withoutTopic = Visit(date: TestCalendar.date(2026, 11, 24, 10), summary: "Başka not")
+        try env.repos.visits.add(withTopic, customer: customer, contacts: [], opportunity: nil)
+        try env.repos.visits.add(withoutTopic, customer: customer, contacts: [], opportunity: nil)
+        let model = makeModel(env)
+        model.reload(resetSelection: true)
+
+        XCTAssertTrue(model.blocks[0].contains("\nKonu: Yedek parça stoğu\n"), model.blocks[0])
+        XCTAssertTrue(model.blocks[1].contains("\nKonu: -\n"), model.blocks[1])
     }
 
     func testRecipients() {

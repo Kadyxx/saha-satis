@@ -13,7 +13,7 @@ struct VisitExportItem: Equatable, Sendable {
     var district: String = ""
     var contacts: [Person] = []
     var typeTitle: String
-    /// "Konu": ziyaretin konuları, yoksa bağlı fırsatın başlığı.
+    /// "Konu": ziyaret formundaki Konu alanı.
     var topic: String = ""
     var note: String = ""
     var nextStep: String = ""
@@ -112,8 +112,6 @@ enum VisitReportFormatter {
 extension VisitExportItem {
     @MainActor
     init(visit: Visit) {
-        let topics = visit.topics.map(VisitReportFormatter.singleLine).filter { !$0.isEmpty }
-        let topic = topics.isEmpty ? (visit.opportunity?.title ?? "") : topics.joined(separator: ", ")
         self.init(
             date: visit.date,
             customerName: visit.customer?.name ?? "",
@@ -123,7 +121,7 @@ extension VisitExportItem {
                 .sorted { ($0.isPrimary ? 0 : 1, $0.fullName) < ($1.isPrimary ? 0 : 1, $1.fullName) }
                 .map { Person(name: $0.fullName, title: $0.title) },
             typeTitle: visit.type.title,
-            topic: topic,
+            topic: visit.topic,
             note: visit.summary,
             nextStep: visit.nextStep,
             nextStepDate: visit.nextStepDate

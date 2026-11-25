@@ -33,6 +33,7 @@ struct VisitFormView: View {
             Form {
                 customerSection
                 contactsSection
+                topicSection
                 detailsSection
                 VoiceNoteSection(controller: model.voice)
                 noteSection
@@ -126,6 +127,40 @@ struct VisitFormView: View {
             }
             .listRowBackground(Theme.surface)
         }
+    }
+
+    private var topicSection: some View {
+        Section {
+            FormTextField(title: "Konu", text: $model.topic)
+            let suggestions = model.topicSuggestions
+            if !suggestions.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Önceki konular")
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(suggestions, id: \.self) { suggestion in
+                                Button { model.topic = suggestion } label: {
+                                    Text(suggestion)
+                                        .font(.footnote)
+                                        .foregroundStyle(Theme.brandText)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 5)
+                                        .background(Theme.brand.opacity(0.2), in: Capsule())
+                                }
+                                .buttonStyle(.borderless)
+                            }
+                        }
+                    }
+                }
+            }
+        } header: {
+            Text("Konu")
+        } footer: {
+            Text("İsteğe bağlı. CRM raporunda \"Konu\" satırına yazılır.")
+        }
+        .listRowBackground(Theme.surface)
     }
 
     private var detailsSection: some View {

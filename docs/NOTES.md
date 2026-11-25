@@ -336,6 +336,28 @@ SPEC palet tablosuna eklendi; yalnızca `TodayView`'daki kaydırma düğmelerind
    **Elle denenmesi gerekenler (gerçek iPhone):** mail yazma ekranının dolu gelmesi, `.sent` sonrası işaretleme, mail
    hesabı yokken paylaşım menüsü, panoya kopyalanan metnin Windows'ta CRM'e yapıştırılması (satır sonları, Türkçe karakter).
 
+## Ziyaret "Konu" alanı — kararlar
+
+1. **Veri.** `Visit.topic: String` (varsayılan boş; hafif şema geçişi, CloudKit uyumlu). Mevcut `Visit.topics: [String]`
+   (Faz 4'te yapay zekânın dolduracağı çoklu konu) **değişmedi ve artık hiçbir yerde okunmuyor**; Konu alanıyla
+   karışmasın diye ayrı tutuldu. Formda kaydederken satır sonları/art arda boşluklar tek boşluğa indirilir (tek satır).
+2. **Form.** "Konu" bölümü kişilerin altında: tek satır `FormTextField`, isteğe bağlı (boş olsa da kaydedilir).
+   Altında "Önceki konular": **aynı müşterinin son 5 farklı konusu**, en yeni önce; boşlar ve büyük/küçük harf farkıyla
+   tekrar edenler atlanır; formda zaten yazılı olan metin ve **düzenlenen ziyaretin kendi konusu önerilmez**; müşteri
+   değişince öneriler yenilenir. Dokununca alana yazılır (üzerine yazar).
+3. **Başlık kuralı** (`Visit.displayTitle`): konu; boşsa notun ilk dolu satırı; ikisi de yoksa başlık yok ve satır eski
+   görünüme (tarih başlık) döner. Başlık notun ilk satırından geldiyse altta o satır tekrarlanmaz (`noteBelowTitle`).
+   Dikte edilen not tek uzun paragraf olabildiğinden böyle bir ziyarette başlık 2 satırda kesilir. Başlık yalnızca
+   müşteri detayındaki ziyaret geçmişi satırında gösteriliyor (müşteri detayı ve geçmiş aynı satırı kullanıyor);
+   Bugün ekranı ve dışa aktarma seçim satırları değişmedi.
+4. **Dışa aktarma.** "Konu" satırı yalnızca `Visit.topic`'ten gelir. Önceki karar (ziyaretin `topics` alanı, yoksa bağlı
+   fırsatın başlığı) **kaldırıldı**: boş konu "-" olarak çıkar, sürpriz yok. Eski kayıtlarda Konu boş olacağı için
+   geçmiş ziyaretler "-" ile gider; elle düzenlenebilir.
+5. **SPEC.** "Şablon ayarlardan değiştirilebilir" ifadesi ve "Diğer ayarlar"daki "dışa aktarma şablonu" çıkarıldı
+   (kullanıcı kararı: şablon düzenleme gerekmiyor). Veri modeli tablosuna `topic`, ziyaret kaydı adımlarına Konu eklendi.
+6. **Ekran görüntüleri:** `screen-visitForm-*` / `screen-visitRecording-*` (Konu alanı + öneriler; örnek veride Örnek
+   Makina'nın üç geçmiş konusu öneri çıkar) ve `screen-visitHistory-*` (konu başlıklı satırlar) CI'da yenilenir.
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

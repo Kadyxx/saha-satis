@@ -107,9 +107,7 @@ struct QuoteDetailView: View {
                 }
             }
             LabeledContent("Genel toplam") {
-                Text(AppFormat.moneyExact(quote.totalAmount, currency: quote.currency))
-                    .font(.headline)
-                    .foregroundStyle(Theme.textPrimary)
+                ExcludingVATAmount(text: AppFormat.moneyExact(quote.totalAmount, currency: quote.currency), font: .headline)
             }
             LabeledContent("Tarih") {
                 Text(AppFormat.date(quote.date)).foregroundStyle(Theme.textPrimary)
@@ -224,9 +222,7 @@ struct QuoteDetailView: View {
                     }
                 }
                 LabeledContent("Genel toplam") {
-                    Text(AppFormat.moneyExact(quote.totalAmount, currency: quote.currency))
-                        .font(.headline)
-                        .foregroundStyle(Theme.textPrimary)
+                    ExcludingVATAmount(text: AppFormat.moneyExact(quote.totalAmount, currency: quote.currency), font: .headline)
                 }
             }
         }

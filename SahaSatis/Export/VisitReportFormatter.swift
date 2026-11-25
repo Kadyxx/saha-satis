@@ -23,7 +23,7 @@ struct VisitExportItem: Equatable, Sendable {
 /// Gün sonu CRM raporunun düz metni (SPEC → Gün sonu dışa aktarma). Her ziyaret ayrı blok, alanlar CRM'e tek tek
 /// yapıştırılacak sırada:
 ///
-///     === ZIYARET 1 ===
+///     === ZİYARET 1 ===
 ///     Tarih: 24.11.2026
 ///     Firma: Örnek Makina A.Ş.
 ///     Şehir / İlçe: Bursa / Nilüfer
@@ -53,7 +53,7 @@ enum VisitReportFormatter {
         }.joined(separator: ", ")
 
         let lines = [
-            "=== ZIYARET \(number) ===",
+            "=== ZİYARET \(number) ===",
             "Tarih: \(AppFormat.numericDate(item.date, calendar: calendar))",
             "Firma: \(value(item.customerName))",
             "Şehir / İlçe: \(cityDistrict.isEmpty ? emptyValue : cityDistrict)",

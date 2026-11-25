@@ -35,3 +35,43 @@ struct FormMultilineField: View {
         }
     }
 }
+
+/// Tutar alanı: yazarken binlik ayracı ekler ("480000" → "480.000"), virgül ondalık ayracıdır.
+/// Metin `AmountParser.parse` ile sayıya geri çevrilir (kaydederken ayraçlar atılır).
+struct AmountTextField: View {
+    @Binding var text: String
+    let label: String
+    var isValid = true
+
+    var body: some View {
+        TextField("0", text: $text)
+            .multilineTextAlignment(.trailing)
+            .keyboardType(.decimalPad)
+            .foregroundStyle(isValid ? Theme.textPrimary : Theme.overdue)
+            .accessibilityLabel(label)
+            .onChange(of: text) { old, new in
+                let formatted = AmountParser.formatTyping(new, previous: old)
+                if formatted != new { text = formatted }
+            }
+    }
+}
+
+/// Tutarın altında küçük "KDV hariç" notu (teklif tutarları KDV'siz girilir ve gösterilir).
+struct ExcludingVATAmount: View {
+    let text: String
+    var font: Font = .body
+    var color: Color = Theme.textPrimary
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Text(text)
+                .font(font)
+                .foregroundStyle(color)
+            Text("KDV hariç")
+                .font(.caption2)
+                .foregroundStyle(Theme.textSecondary)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(text), KDV hariç")
+    }
+}

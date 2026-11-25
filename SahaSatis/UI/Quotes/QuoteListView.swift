@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Pipeline ekranındaki "Teklifler" içeriği: durum filtresi (Taslak, Gönderildi, Takipte, Kazanıldı, Kaybedildi) ve
-/// liste. Geçerliliği yaklaşan/dolan bekleyen teklifler üstte ve vurgulu ayrı bölümde.
+/// liste. Geçerlilik uyarısı (yaklaşan/dolan) bekleyen teklifler üstte ve vurgulu ayrı bölümde.
 struct QuoteListView: View {
     @Bindable var model: QuoteListModel
     let warningDays: Int
@@ -64,7 +64,7 @@ struct QuoteListView: View {
                         .listRowBackground(Theme.action.opacity(0.16))
                     }
                 } header: {
-                    Label("Geçerliliği yaklaşan", systemImage: "clock.badge.exclamationmark")
+                    Label("Geçerlilik uyarısı", systemImage: "clock.badge.exclamationmark")
                         .font(.subheadline.weight(.bold))
                         .foregroundStyle(Theme.textPrimary)
                         .textCase(nil)

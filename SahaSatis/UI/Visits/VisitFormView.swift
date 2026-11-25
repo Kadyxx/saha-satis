@@ -34,12 +34,11 @@ struct VisitFormView: View {
             Form {
                 customerSection
                 contactsSection
+                VoiceNoteSection(controller: model.voice, note: $model.note)
                 topicSection
+                nextStepSection
                 opportunitySection
                 detailsSection
-                VoiceNoteSection(controller: model.voice)
-                noteSection
-                nextStepSection
             }
             .scrollContentBackground(.hidden)
             .onChange(of: model.customer?.id) { model.customerChanged() }
@@ -206,14 +205,6 @@ struct VisitFormView: View {
         .listRowBackground(Theme.surface)
     }
 
-    private var noteSection: some View {
-        Section {
-            FormMultilineField(title: "Görüşme notu", text: $model.note, lines: 4...12)
-        } footer: {
-            Text("Sesli not parçaları buraya eklenir; metni istediğiniz gibi düzenleyebilirsiniz.")
-        }
-        .listRowBackground(Theme.surface)
-    }
 
     private var nextStepSection: some View {
         Section {
@@ -236,15 +227,16 @@ struct VisitFormView: View {
         Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } })
     }
 }
-
-/// Sesli not: başlat / duraklat / devam / bitir, canlı metin ve izin/durum mesajları.
+/// Görüşme notu: büyük mikrofon butonu (başlat / duraklat / devam / bitir), canlı metin, izin/durum mesajları ve
+/// altında not metni. Sesli not parçaları nota eklenir; metin istenildiği gibi düzenlenir.
 struct VoiceNoteSection: View {
     let controller: VoiceNoteController
+    @Binding var note: String
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         Section {
-            controls
+            micControl
             if controller.isRecording {
                 HStack(spacing: 8) {
                     Circle()
@@ -256,47 +248,75 @@ struct VoiceNoteSection: View {
                 .accessibilityElement(children: .combine)
             }
             statusMessage
+            FormMultilineField(title: "Görüşme notu", text: $note, lines: 5...14)
         } header: {
-            Text("Sesli not")
+            Text("Görüşme notu")
         } footer: {
             Text("Mikrofon izni vermeseniz de notu klavyeyle yazabilirsiniz.")
         }
         .listRowBackground(Theme.surface)
     }
 
+    /// Ortada büyük, yuvarlak mikrofon butonu; kayıt sırasında halkalı (aktif) ve yanında Duraklat / Bitir.
     @ViewBuilder
-    private var controls: some View {
-        HStack(spacing: 12) {
-            switch controller.state {
-            case .recording:
-                Button { controller.pause() } label: {
-                    Label("Duraklat", systemImage: "pause.fill")
+    private var micControl: some View {
+        VStack(spacing: 10) {
+            micButton
+            Text(micCaption)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(controller.isRecording ? Theme.overdue : Theme.textPrimary)
+            if controller.state == .recording || controller.state == .paused {
+                HStack(spacing: 12) {
+                    if controller.state == .recording {
+                        Button { controller.pause() } label: {
+                            Label("Duraklat", systemImage: "pause.fill")
+                                .fixedSize()
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    Button { controller.stop() } label: {
+                        Label("Bitir", systemImage: "stop.fill")
+                            .fixedSize()
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
-                Button { controller.stop() } label: {
-                    Label("Bitir", systemImage: "stop.fill")
-                }
-                .buttonStyle(.bordered)
-            case .paused:
-                Button { Task { await controller.start() } } label: {
-                    Label("Devam et", systemImage: "mic.fill")
-                        .foregroundStyle(Theme.onAction)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.action)
-                Button { controller.stop() } label: {
-                    Label("Bitir", systemImage: "stop.fill")
-                }
-                .buttonStyle(.bordered)
-            default:
-                Button { Task { await controller.start() } } label: {
-                    Label("Konuşmaya başla", systemImage: "mic.fill")
-                        .foregroundStyle(Theme.onAction)
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.action)
             }
-            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+    }
+
+    private var micButton: some View {
+        Button {
+            switch controller.state {
+            case .recording: controller.pause()
+            default: Task { await controller.start() }
+            }
+        } label: {
+            ZStack {
+                if controller.isRecording {
+                    Circle()
+                        .stroke(Theme.action.opacity(0.35), lineWidth: 6)
+                        .frame(width: 88, height: 88)
+                }
+                Circle()
+                    .fill(Theme.action)
+                    .frame(width: 72, height: 72)
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(Theme.onAction)
+            }
+            .frame(width: 92, height: 92)
+        }
+        .buttonStyle(.borderless)
+        .accessibilityLabel(micCaption)
+    }
+
+    private var micCaption: String {
+        switch controller.state {
+        case .recording: return "Dinleniyor — duraklatmak için dokunun"
+        case .paused: return "Devam etmek için dokunun"
+        default: return "Konuşmaya başlamak için dokunun"
         }
     }
 

@@ -48,7 +48,6 @@ struct CitiesSettingsView: View {
         }
         .scrollContentBackground(.hidden)
         .background(Theme.background)
-        .visitButton()
         .navigationTitle("Şehirler")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { EditButton() }

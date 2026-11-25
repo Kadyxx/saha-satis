@@ -91,3 +91,37 @@ enum AmountParser {
         return String(value).replacingOccurrences(of: ".", with: ",")
     }
 }
+
+extension AmountParser {
+    /// Düzenleme alanı için binlik ayraçlı metin: 480000 → "480.000", 1250.5 → "1.250,5"; 0 → boş.
+    static func groupedEditingText(_ value: Double) -> String {
+        formatTyping(editingText(value), previous: "")
+    }
+
+    /// Yazarken biçimlendirme: rakamlar binlik ayracıyla gruplanır ("480000" → "480.000"), ondalık ayracı virgüldür
+    /// ve en çok `maxDecimals` hane tutulur. Metin içindeki noktalar binlik ayracı sayılır (yeniden hesaplanır);
+    /// yalnızca sona yeni yazılmış tek bir nokta (nokta tuşlu klavye) ondalık ayracına çevrilir. Rakam, virgül ve
+    /// nokta dışındaki karakterler atılır. Sonuç `parse` ile aynı sayıya geri döner.
+    static func formatTyping(_ text: String, previous: String, maxDecimals: Int = 2) -> String {
+        var raw = text.filter { $0.isASCII && ($0.isNumber || $0 == "." || $0 == ",") }
+        let justTypedDot = raw.hasSuffix(".") && raw.count > previous.count && !raw.contains(",")
+        if justTypedDot { raw.removeLast(); raw.append(",") }
+
+        let parts = raw.filter { $0 != "." }.split(separator: ",", maxSplits: 1, omittingEmptySubsequences: false)
+        guard var integer = parts.first.map(String.init) else { return "" }
+        let hasComma = raw.contains(",") && parts.count > 1
+        let decimals = hasComma ? String(parts[1].filter { $0 != "," }.prefix(maxDecimals)) : ""
+
+        while integer.count > 1, integer.hasPrefix("0") { integer.removeFirst() }
+        if integer.isEmpty && !hasComma { return "" }
+        if integer.isEmpty { integer = "0" }
+
+        var grouped = ""
+        for (offset, character) in integer.reversed().enumerated() {
+            if offset > 0, offset % 3 == 0 { grouped.append(".") }
+            grouped.append(character)
+        }
+        let result = String(grouped.reversed())
+        return hasComma ? "\(result),\(decimals)" : result
+    }
+}

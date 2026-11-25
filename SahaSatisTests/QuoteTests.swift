@@ -405,3 +405,48 @@ final class QuoteFormModelTests: XCTestCase {
         XCTAssertEqual(form.availableOpportunities.map(\.title), ["Kazanılan"])
     }
 }
+
+/// Teklif no çakışma uyarısı: aynı numara başka tekliftedir → uyarı; kaydetmeyi engellemez.
+@MainActor
+final class QuoteNumberWarningTests: XCTestCase {
+    private let cal = TestCalendar.utc
+    private let now = TestCalendar.date(2026, 11, 25, 12)
+    private let rules = QuoteReminderRules(defaultFollowUpDays: [3, 7], expiryEnabled: true, expiryDaysBefore: 3, reminderTime: TimeOfDay(hour: 9))
+
+    private func form(_ env: TestEnv, quote: Quote? = nil, customer: Customer? = nil) -> QuoteFormModel {
+        QuoteFormModel(
+            repositories: env.repos, reminderRules: rules, defaultCurrency: .tl,
+            quote: quote, customer: customer, calendar: cal, now: now
+        )
+    }
+
+    func testWarnsWhenAnotherQuoteHasTheSameNumberButStillSaves() throws {
+        let env = try TestEnv()
+        let customer = try env.makeCustomer()
+        try env.repos.quotes.add(Quote(quoteNumber: "T-2026-004"), customer: customer, opportunity: nil)
+
+        let model = form(env, customer: customer)
+        XCTAssertNil(model.duplicateNumberQuote, "Öneri (T-2026-005) çakışmaz")
+
+        model.number = "t-2026-004 "
+        XCTAssertEqual(model.duplicateNumberQuote?.quoteNumber, "T-2026-004", "Büyük/küçük harf ve boşluk yok sayılır")
+        XCTAssertTrue(model.canSave, "Uyarı kaydetmeyi engellemez")
+        XCTAssertTrue(model.save())
+
+        model.number = ""
+        XCTAssertNil(model.duplicateNumberQuote)
+    }
+
+    func testEditingAQuoteDoesNotWarnAboutItself() throws {
+        let env = try TestEnv()
+        let customer = try env.makeCustomer()
+        let quote = Quote(quoteNumber: "T-2026-004")
+        try env.repos.quotes.add(quote, customer: customer, opportunity: nil)
+        try env.repos.quotes.add(Quote(quoteNumber: "T-2026-005"), customer: customer, opportunity: nil)
+
+        let model = form(env, quote: quote)
+        XCTAssertNil(model.duplicateNumberQuote)
+        model.number = "T-2026-005"
+        XCTAssertNotNil(model.duplicateNumberQuote)
+    }
+}

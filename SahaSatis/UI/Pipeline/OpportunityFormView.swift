@@ -84,11 +84,7 @@ struct OpportunityFormView: View {
     private var amountSection: some View {
         Section {
             LabeledContent("Tahmini tutar") {
-                TextField("0", text: $model.amountText)
-                    .multilineTextAlignment(.trailing)
-                    .keyboardType(.decimalPad)
-                    .foregroundStyle(model.amountIsValid ? Theme.textPrimary : Theme.overdue)
-                    .accessibilityLabel("Tahmini tutar")
+                AmountTextField(text: $model.amountText, label: "Tahmini tutar", isValid: model.amountIsValid)
             }
             Picker("Para birimi", selection: $model.currency) {
                 ForEach(Currency.allCases, id: \.self) { currency in

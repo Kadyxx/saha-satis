@@ -46,7 +46,7 @@ final class OpportunityFormModel {
         if let opportunity {
             title = opportunity.title
             details = opportunity.details
-            amountText = AmountParser.editingText(opportunity.estimatedValue)
+            amountText = AmountParser.groupedEditingText(opportunity.estimatedValue)
             stage = opportunity.stage
             lostReason = opportunity.lostReason
             if let close = opportunity.expectedCloseDate {

@@ -34,7 +34,7 @@ final class VisitReportFormatterTests: XCTestCase {
             nextStepDate: TestCalendar.date(2026, 11, 28)
         )
         let expected = """
-        === ZIYARET 1 ===
+        === ZİYARET 1 ===
         Tarih: 24.11.2026
         Firma: Örnek Makina A.Ş.
         Şehir / İlçe: Bursa / Nilüfer
@@ -53,7 +53,7 @@ final class VisitReportFormatterTests: XCTestCase {
     func testEmptyFieldsKeepTheirLinesWithADash() {
         let empty = VisitExportItem(date: TestCalendar.date(2026, 11, 24), customerName: "", typeTitle: "")
         let expected = """
-        === ZIYARET 3 ===
+        === ZİYARET 3 ===
         Tarih: 24.11.2026
         Firma: -
         Şehir / İlçe: -
@@ -124,6 +124,16 @@ final class VisitReportFormatterTests: XCTestCase {
         XCTAssertTrue(text.contains("Görüşme notu:\n-\n"), text)
     }
 
+    /// tr_TR büyük harf kuralı: "ziyaret" → "ZİYARET" (noktalı İ). Düz "ZIYARET" yazılmamalı.
+    func testBlockHeaderUsesTurkishDottedCapitalI() {
+        let text = VisitReportFormatter.block(item(), number: 1, calendar: cal)
+        let header = text.components(separatedBy: "\n").first ?? ""
+        XCTAssertEqual(header, "=== ZİYARET 1 ===")
+        XCTAssertEqual(header, "=== \("ziyaret".uppercased(with: AppFormat.locale)) 1 ===", "tr_TR büyük harf kuralıyla aynı olmalı")
+        XCTAssertFalse(text.contains("ZIYARET"), "Noktasız I ile yazılmamalı")
+        XCTAssertTrue(VisitReportFormatter.report([item(), item()], calendar: cal).contains("=== ZİYARET 2 ==="))
+    }
+
     func testSingleLineFieldsCollapseLineBreaks() {
         let text = VisitReportFormatter.block(
             item(topic: "Hat 3\nPLC   yenileme", nextStep: "  Teklif\nhazırla  "),
@@ -139,8 +149,8 @@ final class VisitReportFormatterTests: XCTestCase {
         let blocks = VisitReportFormatter.blocks([first, second], calendar: cal)
 
         XCTAssertEqual(blocks.count, 2)
-        XCTAssertTrue(blocks[0].hasPrefix("=== ZIYARET 1 ==="))
-        XCTAssertTrue(blocks[1].hasPrefix("=== ZIYARET 2 ==="))
+        XCTAssertTrue(blocks[0].hasPrefix("=== ZİYARET 1 ==="))
+        XCTAssertTrue(blocks[1].hasPrefix("=== ZİYARET 2 ==="))
         XCTAssertEqual(VisitReportFormatter.report([first, second], calendar: cal), blocks[0] + "\n\n" + blocks[1])
         XCTAssertEqual(VisitReportFormatter.report([], calendar: cal), "")
     }
@@ -286,7 +296,7 @@ final class VisitExportModelTests: XCTestCase {
         XCTAssertTrue(model.blocks[0].contains("Firma: Ankara Makina"))
         XCTAssertTrue(model.blocks[0].contains("Birinci not"))
         XCTAssertTrue(model.blocks[1].contains("Firma: Bursa Gıda"))
-        XCTAssertTrue(text.contains("=== ZIYARET 2 ==="))
+        XCTAssertTrue(text.contains("=== ZİYARET 2 ==="))
         XCTAssertFalse(text.contains("Atlanacak"))
     }
 

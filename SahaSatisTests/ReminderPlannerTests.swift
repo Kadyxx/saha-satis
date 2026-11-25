@@ -201,7 +201,7 @@ final class ReminderPlannerTests: XCTestCase {
 
     func testMorningSummaryUsesConfiguredTime() throws {
         var settings = ReminderSettingsSnapshot()
-        settings.morningSummaryTime = TimeOfDay(hour: 7, minute: 30)
+        settings.morningSummaryTime = SahaSatis.TimeOfDay(hour: 7, minute: 30)
         let item = task(due: TestCalendar.date(2026, 11, 25, 12))
         let summary = try XCTUnwrap(
             plan([item], settings: settings, now: TestCalendar.date(2026, 11, 25, 6)).first { $0.kind == .morningSummary }
@@ -266,7 +266,7 @@ final class ReminderPlannerTests: XCTestCase {
         XCTAssertTrue(plan([], unexported: 2, settings: settings).isEmpty)
 
         settings.endOfDayEnabled = true
-        settings.endOfDayTime = TimeOfDay(hour: 17, minute: 45)
+        settings.endOfDayTime = SahaSatis.TimeOfDay(hour: 17, minute: 45)
         let result = try XCTUnwrap(plan([], unexported: 2, settings: settings).first)
         XCTAssertEqual(result.fireDate, TestCalendar.date(2026, 11, 25, 17, 45))
     }

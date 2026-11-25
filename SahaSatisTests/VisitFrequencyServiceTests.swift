@@ -22,7 +22,7 @@ final class VisitFrequencyServiceTests: XCTestCase {
 
     private func dueDay(after visit: Date, days: Int) -> Date {
         let day = cal.date(byAdding: .day, value: days, to: cal.startOfDay(for: visit))!
-        return TimeOfDay(hour: 9).date(on: day, calendar: cal)
+        return SahaSatis.TimeOfDay(hour: 9).date(on: day, calendar: cal)
     }
 
     func testThresholdDependsOnRating() throws {
@@ -61,11 +61,11 @@ final class VisitFrequencyServiceTests: XCTestCase {
         try visit(env, customer, on: TestCalendar.date(2026, 11, 20, 10))
 
         var rules = VisitFrequencyRules()
-        rules.reminderTime = TimeOfDay(hour: 10, minute: 30)
+        rules.reminderTime = SahaSatis.TimeOfDay(hour: 10, minute: 30)
         try makeService(env, rules: rules).sync(now: now)
 
         let due = try XCTUnwrap(try frequencyTasks(env, for: customer).first?.dueDate)
-        XCTAssertEqual(TimeOfDay(date: due, calendar: cal), TimeOfDay(hour: 10, minute: 30))
+        XCTAssertEqual(SahaSatis.TimeOfDay(date: due, calendar: cal), SahaSatis.TimeOfDay(hour: 10, minute: 30))
     }
 
     func testOnlyOneOpenTaskPerCustomerAndSyncIsIdempotent() throws {
@@ -160,7 +160,7 @@ final class VisitFrequencyServiceTests: XCTestCase {
     }
 
     func testDueDateHelper() {
-        let nine = TimeOfDay(hour: 9)
+        let nine = SahaSatis.TimeOfDay(hour: 9)
         // Eşik geçmiş: bugün.
         XCTAssertEqual(
             VisitFrequencyService.dueDate(
@@ -235,13 +235,13 @@ final class VisitFrequencyServiceTests: XCTestCase {
         let name = "test-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defaults.removePersistentDomain(forName: name)
-        let settings = AppSettings(defaults: defaults)
+        let settings = SahaSatis.AppSettings(defaults: defaults)
         settings.visitFrequencyImportantDays = 21
-        settings.defaultReminderTime = TimeOfDay(hour: 8, minute: 15)
+        settings.defaultReminderTime = SahaSatis.TimeOfDay(hour: 8, minute: 15)
 
         let rules = settings.visitFrequencyRules
         XCTAssertEqual(rules.importantDays, 21)
         XCTAssertEqual(rules.promisingDays, 60)
-        XCTAssertEqual(rules.reminderTime, TimeOfDay(hour: 8, minute: 15))
+        XCTAssertEqual(rules.reminderTime, SahaSatis.TimeOfDay(hour: 8, minute: 15))
     }
 }

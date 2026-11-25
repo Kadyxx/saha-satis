@@ -115,7 +115,7 @@ final class TodayTests: XCTestCase {
     }
 
     func testManualTaskDefaultsToNextReminderTime() {
-        let nine = TimeOfDay(hour: 9)
+        let nine = SahaSatis.TimeOfDay(hour: 9)
         XCTAssertEqual(
             ManualTaskFormView.initialDueDate(now: TestCalendar.date(2026, 11, 25, 7), reminderTime: nine, calendar: cal),
             TestCalendar.date(2026, 11, 25, 9)
@@ -142,7 +142,7 @@ final class NotificationActionTests: XCTestCase {
         defaults.removePersistentDomain(forName: name)
         return AppContext(
             repositories: env.repos,
-            settings: AppSettings(defaults: defaults),
+            settings: SahaSatis.AppSettings(defaults: defaults),
             makeSpeechEngine: { MockSpeechEngine() },
             notificationScheduler: MockNotificationScheduler()
         )

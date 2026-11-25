@@ -8,16 +8,16 @@ final class ReminderSchedulerTests: XCTestCase {
     /// Çarşamba 12:00.
     private let now = TestCalendar.date(2026, 11, 25, 12)
 
-    private func makeSettings() -> AppSettings {
+    private func makeSettings() -> SahaSatis.AppSettings {
         let name = "test-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defaults.removePersistentDomain(forName: name)
-        return AppSettings(defaults: defaults)
+        return SahaSatis.AppSettings(defaults: defaults)
     }
 
     private func makeScheduler(
         _ env: TestEnv,
-        settings: AppSettings,
+        settings: SahaSatis.AppSettings,
         mock: MockNotificationScheduler
     ) -> ReminderScheduler {
         let fixedNow = now
@@ -45,7 +45,7 @@ final class ReminderSchedulerTests: XCTestCase {
     }
 
     /// Yalnızca görevleri sınamak için sabah özeti ve gün sonunu kapatır.
-    private func quiet(_ settings: AppSettings) {
+    private func quiet(_ settings: SahaSatis.AppSettings) {
         settings.morningSummaryEnabled = false
         settings.endOfDayReminderEnabled = false
     }
@@ -112,8 +112,8 @@ final class ReminderSchedulerTests: XCTestCase {
             customer: customer, contacts: [], opportunity: nil
         )
         let settings = makeSettings()
-        settings.morningSummaryTime = TimeOfDay(hour: 7, minute: 45)
-        settings.endOfDayReminderTime = TimeOfDay(hour: 17, minute: 30)
+        settings.morningSummaryTime = SahaSatis.TimeOfDay(hour: 7, minute: 45)
+        settings.endOfDayReminderTime = SahaSatis.TimeOfDay(hour: 17, minute: 30)
         let mock = MockNotificationScheduler()
         // Şimdi: Çarşamba 07:00 (özet ve gün sonu henüz gelmedi).
         let early = TestCalendar.date(2026, 11, 25, 7)

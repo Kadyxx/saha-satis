@@ -508,6 +508,48 @@ SPEC palet tablosuna eklendi; yalnızca `TodayView`'daki kaydırma düğmelerind
 **Elle denenmesi gerekenler (gerçek iPhone):** tutar alanında yazarken ayraç ve imleç davranışı, büyük mikrofon butonu ile izin
 akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büyük widget'ın alt kenarı).
 
+## Faz 3 – Bölge (kararlar)
+
+**Önce:** `claude/ui-fixes` PR #7 ile main'e birleşti. Yeni dal `claude/region`.
+
+0. **Tutar alanında imleç.** `AmountTextField` artık `UITextField` sarmalayıcı (SwiftUI `TextField` imleci okutmuyor). Her tuş vuruşunda
+   `AmountParser.formatTyping(_:cursor:previous:)` metni biçimler ve imleci aynı "anlamlı karakter"in (rakam + ilk virgül) sağında tutar;
+   binlik noktaları imleç sayımına girmez. Ortadan yazma/silme, yeni noktanın imleçten önce çıkması, baştaki sıfırın atılması,
+   sona yazılan noktanın virgüle dönmesi `AmountCursorTests`'te. **Elle denenmesi gerekir:** gerçek klavyede ortadan düzeltme ve
+   yapıştırma.
+1. **Harita yok.** MapKit/CLGeocoder/konum/yol tarifi kapsam dışı; SPEC'teki harita bölümü ve satırları ("Harita" teknoloji satırı, pin/yol
+   tarifi, "adresten koordinat", "konuma en yakın müşteri") kaldırıldı/yeniden yazıldı. `latitude/longitude` alanları şemada durur
+   (CloudKit şemasını bozmamak için silinmedi) ama kullanılmaz. "Haftalık şehir planı" bu turda yapılmadı.
+2. **Bölge sekmesi** (`AppTab.region`, simge `square.grid.2x2`): şehirler → ilçeler → OSB'ye göre müşteriler (`RegionView`).
+   Mantık `RegionBuilder` (saf, testli); durum `RegionModel`. Şehir listesi Ayarlar'daki sıra + müşterisi olmayan şehirler (0) +
+   bölge dışı şehirler (alfabetik) + şehri boş müşteriler ("Şehir belirtilmemiş", en sonda). İlçe satırı yalnızca müşterisi olan
+   (filtreye göre) ilçeleri gösterir; "İlçe belirtilmemiş" en sonda. İlçe içinde OSB grupları alfabetik, **OSB'siz müşteriler en sonda ayrı
+   grup**, grup içinde ada göre. Her satırda müşteri sayısı + bekleyen teklif + gecikmiş takip (gecikmiş = bugünden önce vadeli,
+   tamamlanmamış). Şehir/ilçe/OSB eşleşmesi büyük/küçük harf ve Türkçe karakter duyarsızdır ("bursa" = Bursa, " Bursa  OSB " = "Bursa OSB").
+   "+ Ziyaret" butonu üç seviyede de var.
+3. **Filtreler (her seviyede aynı, VE ile):** Durum, Değerlendirme (menü çipleri), Teklif bekleyen (Gönderildi/Takipte),
+   Ziyareti geçen, Migrasyon fırsatı. **"Ziyaret sıklığı aşılan" tanımı:** son ziyaretten (hiç yoksa eklenme tarihinden) bu yana geçen
+   takvim günü ≥ değerlendirmenin eşiği (Ayarlar: Önemli 30 / Potansiyelli 60 / Zayıf 120); pasifler hariç — `VisitFrequencyService` ile aynı
+   referans. Eşiğe **ulaşan** da dahil ("tam 30. gün" listelenir). Sayılar filtreye göre güncellenir; filtre sekmeyi değiştirince korunur,
+   "Temizle" ile sıfırlanır.
+4. **İlçe listeleri:** `DistrictCatalog` (Shared/Data, gömülü): Çanakkale 12, Balıkesir 20, Bursa 17, Bilecik 8, Yalova 6, Eskişehir 14, Kütahya 13,
+   Afyonkarahisar 18 ilçe (testte sayılar doğrulanır). Merkez ilçesi "Merkez" adını taşıyan şehirlerde (Çanakkale, Bilecik, Yalova, Kütahya,
+   Afyonkarahisar) "Merkez" listede; Balıkesir (Altıeylül, Karesi), Bursa (Nilüfer, Osmangazi, Yıldırım), Eskişehir (Odunpazarı, Tepebaşı)
+   ilçeleriyle. "Afyon" kısa adı Afyonkarahisar'a eşlenir. **Resmi liste kaynağı bilgi birikimimizdir; yayına çıkmadan önce güncel il/ilçe
+   listesiyle (ör. MERNİS/Nüfus ve Vatandaşlık) karşılaştırılmalı.**
+5. **Müşteri formu:** şehir katalogdaysa İlçe bir seçici (Seçiniz + liste + "Diğer…"); "Diğer…" elle yazma alanı açar. Listede olmayan şehirde (yeni
+   eklenen veya şehir seçilmemiş) serbest metin. Şehir değişince yeni şehrin listesinde olmayan ilçe temizlenir. Düzenlemede kayıtlı ilçe listedekiyle
+   yalnızca yazım farkıyla eşleşiyorsa resmi yazıma çekilir; listede olmayan değer "Diğer" olarak açılır.
+6. **Mevcut kayıtlar:** `DistrictMigration` uygulama açılışında çalışır (kayıtlı ilçe, şehrin listesindeki resmi yazımla eşleşiyorsa o yazım yazılır:
+   "Nilufer" → "Nilüfer"); **eşleşmeyenler ve listede olmayan şehirler dokunulmaz**. Tekrar çalıştırmak zararsız (yalnızca farklı yazılanlar değişir).
+   Bölge ekranı gruplamada da aynı eşleştirmeyi kullanır; yani göçten önce bile "nilufer" ve "Nilüfer" tek ilçe görünür.
+7. **Müşteriler listesi:** filtre menüsüne İlçe eklendi (seçenekler verideki ilçeler, şehir seçiliyse yalnızca o şehrinkiler, aynı ilçenin yazımları
+   tek seçenek). Şehir değişince ilçe filtresi sıfırlanır.
+8. **Ekran görüntüleri (DEBUG):** `region` (şehirler), `regionCity` (Bursa ilçeleri), `regionDistrict` (Bursa/Nilüfer: "Bursa OSB" grubu ve "OSB belirtilmemiş"
+   grubu), açık/koyu. Bu sahnelere özel `SampleData.loadRegionShowcase` (ek hayali Bursa müşterileri; temel örnek veri ve diğer testler değişmedi).
+   `PlaceholderView` (Harita yer tutucusu) silindi.
+9. **Yapılmayanlar:** harita/konum/yol tarifi, haftalık şehir planı, CSV içe aktarma, bölgeler arası toplu karşılaştırma. Bölge ekranında arama yok.
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

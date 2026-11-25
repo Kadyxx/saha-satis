@@ -787,3 +787,84 @@ final class WeekWidgetLayoutTests: XCTestCase {
         XCTAssertEqual(fit.hiddenTasks, 0)
     }
 }
+
+/// Tutar alanında imleç yazılan yerde kalır (ortadan yazma/silme sona atlamaz).
+final class AmountCursorTests: XCTestCase {
+    private func edit(_ text: String, cursor: Int, previous: String) -> (String, Int) {
+        let result = AmountParser.formatTyping(text, cursor: cursor, previous: previous)
+        return (result.text, result.cursor)
+    }
+
+    func testTypingAtTheEndKeepsCursorAtTheEnd() {
+        let (text, cursor) = edit("480.0005", cursor: 8, previous: "480.000")
+        XCTAssertEqual(text, "4.800.005")
+        XCTAssertEqual(cursor, 9)
+    }
+
+    func testInsertingInTheMiddleKeepsCursorRightAfterTheNewDigit() {
+        // "1.250" → "1." sonrasına 9 yazıldı: "1.9250", imleç 3 → "19.250", imleç "19"un sağında
+        let (text, cursor) = edit("1.9250", cursor: 3, previous: "1.250")
+        XCTAssertEqual(text, "19.250")
+        XCTAssertEqual(cursor, 2)
+    }
+
+    func testInsertingAtTheStart() {
+        let (text, cursor) = edit("51.250", cursor: 1, previous: "1.250")
+        XCTAssertEqual(text, "51.250")
+        XCTAssertEqual(cursor, 1)
+    }
+
+    func testDeletingInTheMiddleRegroupsWithoutJumping() {
+        // "4.800" içinde "8" silindi: "4.00", imleç 2 → "400", imleç "4"ün sağında
+        let (text, cursor) = edit("4.00", cursor: 2, previous: "4.800")
+        XCTAssertEqual(text, "400")
+        XCTAssertEqual(cursor, 1)
+    }
+
+    func testRegroupingThatAddsADotBeforeTheCursorMovesCursorWithTheDigit() {
+        // "999" ortasına 9 eklenir: "9999" imleç 2 → "9.999", imleç iki rakamın sağında (nokta dahil 3)
+        let (text, cursor) = edit("9999", cursor: 2, previous: "999")
+        XCTAssertEqual(text, "9.999")
+        XCTAssertEqual(cursor, 3)
+    }
+
+    func testTypedDotInTheMiddleIsIgnoredAndCursorStays() {
+        let (text, cursor) = edit("12.50", cursor: 3, previous: "1250")
+        XCTAssertEqual(text, "1.250")
+        XCTAssertEqual(cursor, 3, "İki rakamın (\"12\") hemen sağı")
+    }
+
+    func testCommaInTheMiddleIsKeptAsDecimalSeparator() {
+        let (text, cursor) = edit("12,50", cursor: 3, previous: "1250")
+        XCTAssertEqual(text, "12,50")
+        XCTAssertEqual(cursor, 3)
+    }
+
+    func testTypedDotAtTheEndBecomesCommaWithCursorAfterIt() {
+        let (text, cursor) = edit("1.250.", cursor: 6, previous: "1.250")
+        XCTAssertEqual(text, "1.250,")
+        XCTAssertEqual(cursor, 6)
+    }
+
+    func testLeadingZeroRemovalClampsCursor() {
+        let (text, cursor) = edit("07", cursor: 2, previous: "0")
+        XCTAssertEqual(text, "7")
+        XCTAssertEqual(cursor, 1)
+    }
+
+    func testEmptyAndCursorAtStart() {
+        XCTAssertEqual(edit("", cursor: 0, previous: "5").0, "")
+        XCTAssertEqual(edit("", cursor: 0, previous: "5").1, 0)
+        let atStart = edit("1.250", cursor: 0, previous: "1.250")
+        XCTAssertEqual(atStart.1, 0)
+    }
+
+    func testCursorTextMatchesPlainFormatting() {
+        for (typed, previous) in [("480000", ""), ("1250,567", "1250,56"), ("12a3", "12"), ("₺ 480000", "")] {
+            XCTAssertEqual(
+                AmountParser.formatTyping(typed, cursor: typed.count, previous: previous).text,
+                AmountParser.formatTyping(typed, previous: previous)
+            )
+        }
+    }
+}

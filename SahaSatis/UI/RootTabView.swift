@@ -1,10 +1,10 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case today, customers, pipeline, map, settings
+    case today, customers, pipeline, region, settings
 }
 
-/// Ana gezinme: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar (SPEC → Modüller ve ekranlar).
+/// Ana gezinme: Bugün, Müşteriler, Fırsat/Teklif, Bölge, Ayarlar (SPEC → Modüller ve ekranlar).
 struct RootTabView: View {
     let repositories: Repositories
     let settings: AppSettings
@@ -29,6 +29,7 @@ struct RootTabView: View {
         case .today, .todayForm, .export, .exportPreview: return .today
         case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm: return .pipeline
+        case .region, .regionCity, .regionDistrict: return .region
         }
     }
 
@@ -46,13 +47,9 @@ struct RootTabView: View {
             .tabItem { Label("Fırsat/Teklif", systemImage: "doc.text") }
             .tag(AppTab.pipeline)
 
-            PlaceholderView(
-                title: "Harita",
-                systemImage: "map",
-                message: "Müşterileriniz ve haftalık bölge planınız haritada görünecek."
-            )
-            .tabItem { Label("Harita", systemImage: "map") }
-            .tag(AppTab.map)
+            RegionView(repositories: repositories, settings: settings, debugScene: debugScene)
+                .tabItem { Label("Bölge", systemImage: "square.grid.2x2") }
+                .tag(AppTab.region)
 
             SettingsView(settings: settings, debugScene: debugScene)
                 .tabItem { Label("Ayarlar", systemImage: "gearshape") }

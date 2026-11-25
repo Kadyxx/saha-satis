@@ -55,6 +55,8 @@ struct CustomerFormView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var draft: CustomerDraft
     @State private var errorMessage: String?
+    /// "Diğer" seçildi: ilçe listede yok, elle yazılır.
+    @State private var districtIsOther: Bool
     private let cityOptions: [String]
 
     /// - Parameter cities: Kullanıcının bölge şehirleri (`AppSettings.responsibleCities`).
@@ -62,7 +64,10 @@ struct CustomerFormView: View {
         self.customer = customer
         self.repository = repository
         self.onSaved = onSaved
-        let initial = customer.map { CustomerDraft(customer: $0) } ?? CustomerDraft()
+        var initial = customer.map { CustomerDraft(customer: $0) } ?? CustomerDraft()
+        // Kayıtlı ilçe listedekiyle yalnızca yazım farkıyla eşleşiyorsa resmi yazıma çekilir.
+        if let official = DistrictCatalog.match(initial.district, city: initial.city) { initial.district = official }
+        _districtIsOther = State(initialValue: Self.isOtherDistrict(initial))
         _draft = State(initialValue: initial)
         // Müşterinin mevcut şehri bölge listesinde yoksa seçenek olarak korunur.
         var options = cities
@@ -88,7 +93,7 @@ struct CustomerFormView: View {
                             Text(city).tag(city)
                         }
                     }
-                    FormTextField(title: "İlçe", text: $draft.district)
+                    districtField
                     FormTextField(title: "OSB", text: $draft.industrialZone)
                     FormMultilineField(title: "Adres", text: $draft.address, lines: 2...4)
                 }
@@ -120,6 +125,7 @@ struct CustomerFormView: View {
                 .listRowBackground(Theme.surface)
             }
             .scrollContentBackground(.hidden)
+            .onChange(of: draft.city) { cityChanged() }
             .background(Theme.background)
             .navigationTitle(customer == nil ? "Yeni müşteri" : "Müşteriyi düzenle")
             .navigationBarTitleDisplayMode(.inline)
@@ -139,6 +145,59 @@ struct CustomerFormView: View {
             }
         }
         .tint(Theme.brandText)
+    }
+
+    // MARK: - İlçe
+
+    private static let otherTag = "\u{1}diger"
+
+    /// Şehir katalogda ve ilçe boş değil ama listede yok → "Diğer" (elle yazılmış ilçe).
+    private static func isOtherDistrict(_ draft: CustomerDraft) -> Bool {
+        guard let list = DistrictCatalog.districts(forCity: draft.city) else { return false }
+        return !draft.district.isEmpty && !list.contains(draft.district)
+    }
+
+    /// Şehrin resmi ilçe listesi varsa seçim (+ "Diğer" ile elle yazma); yoksa (yeni eklenen şehir veya şehir seçilmemiş)
+    /// serbest metin.
+    @ViewBuilder
+    private var districtField: some View {
+        if let list = DistrictCatalog.districts(forCity: draft.city) {
+            Picker("İlçe", selection: districtSelection(list)) {
+                Text("Seçiniz").tag("")
+                ForEach(list, id: \.self) { district in
+                    Text(district).tag(district)
+                }
+                Text("Diğer…").tag(Self.otherTag)
+            }
+            if districtIsOther {
+                FormTextField(title: "İlçe (elle)", text: $draft.district)
+            }
+        } else {
+            FormTextField(title: "İlçe", text: $draft.district)
+        }
+    }
+
+    private func districtSelection(_ list: [String]) -> Binding<String> {
+        Binding(
+            get: { districtIsOther ? Self.otherTag : draft.district },
+            set: { value in
+                if value == Self.otherTag {
+                    districtIsOther = true
+                    if list.contains(draft.district) { draft.district = "" }
+                } else {
+                    districtIsOther = false
+                    draft.district = value
+                }
+            }
+        )
+    }
+
+    /// Şehir değişince: yeni şehrin listesinde olmayan ilçe temizlenir (elle yazılmış "Diğer" ilçe de yeni şehre ait değildir).
+    private func cityChanged() {
+        if let list = DistrictCatalog.districts(forCity: draft.city) {
+            if !list.contains(draft.district) { draft.district = "" }
+        }
+        districtIsOther = false
     }
 
     private var errorBinding: Binding<Bool> {

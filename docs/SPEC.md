@@ -49,14 +49,13 @@ SwiftUI + SwiftData ile, iOS 17 minimum, tek uygulama hedefi ve bir widget uzant
 
 | Katman | Seçim | Not |
 | --- | --- | --- |
-| Arayüz | SwiftUI, NavigationStack, TabView | Sekmeler: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar |
+| Arayüz | SwiftUI, NavigationStack, TabView | Sekmeler: Bugün, Müşteriler, Fırsat/Teklif, Bölge, Ayarlar |
 | Veri | SwiftData + CloudKit senkron | Depo App Group konteynerinde; widget aynı depoyu okur |
 | Hatırlatma | UserNotifications (yerel bildirim) | Sunucu yok |
 | Widget | WidgetKit + App Intents | İnteraktif widget için iOS 17 |
 | Ses → metin | Speech framework, `tr-TR` | Uzun kayıtlar parçalanarak işlenir |
 | Kartvizit | VisionKit / Vision metin tanıma | Faz 4 |
 | Yapay zekâ | Foundation Models (cihaz üstü) veya isteğe bağlı bulut LLM | iOS 26+, Apple Intelligence destekli cihaz; Faz 4 |
-| Harita | MapKit + CLGeocoder | Adres → koordinat |
 | E-posta | MFMailComposeViewController | Yoksa paylaşım menüsü |
 | Proje | XcodeGen `project.yml` | `.xcodeproj` repoya girmez |
 
@@ -95,7 +94,7 @@ Ayarlar (`AppSettings`) UserDefaults'ta App Group altında tutulur; ayrıntı "H
 
 ## Modüller ve ekranlar
 
-Beş sekme var: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar. Her yerde sağ altta "+ Ziyaret" hızlı butonu durur.
+Beş sekme var: Bugün, Müşteriler, Fırsat/Teklif, Bölge, Ayarlar. Her yerde sağ altta "+ Ziyaret" hızlı butonu durur.
 
 **1. Bugün (ana ekran)**
 
@@ -105,7 +104,7 @@ Beş sekme var: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar. Her yerde
 
 **2. Müşteriler**
 
-- Liste: arama; şehir, durum ve değerlendirme (Önemli / Potansiyelli / Zayıf) filtreleri; son ziyaret tarihine göre sıralama
+- Liste: arama; şehir, ilçe, durum ve değerlendirme (Önemli / Potansiyelli / Zayıf) filtreleri; son ziyaret tarihine göre sıralama
 - Müşteri detayı: üst kartta değerlendirme rozeti ve kısa değerlendirme notu; sekmeler Kişiler, Geçmiş (ziyaret + teklif + not zaman çizelgesi), Fırsatlar, Kurulu baz, Notlar
 - Kişi satırından tek dokunuşla arama, e-posta, WhatsApp
 - Kurulu bazda `endOfLife` veya `discontinued` ürün varsa müşteri kartında "Migrasyon fırsatı" etiketi
@@ -113,7 +112,7 @@ Beş sekme var: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar. Her yerde
 
 **3. Ziyaret kaydı**
 
-1. Müşteri seç (son ziyaret edilenler ve konuma en yakınlar üstte), kişileri işaretle. İsteğe bağlı tek satırlık "Konu" yaz; altında aynı müşterinin son 5 konusu öneri olarak çıkar, dokununca alana yazılır. Konu, ziyaret geçmişinde satır başlığıdır (boşsa notun ilk satırı) ve CRM raporundaki "Konu" satırıdır.
+1. Müşteri seç (son ziyaret edilenler üstte), kişileri işaretle. İsteğe bağlı tek satırlık "Konu" yaz; altında aynı müşterinin son 5 konusu öneri olarak çıkar, dokununca alana yazılır. Konu, ziyaret geçmişinde satır başlığıdır (boşsa notun ilk satırı) ve CRM raporundaki "Konu" satırıdır.
 2. Mikrofon butonu: konuşma canlı metne döner; duraklat/devam; metin düzenlenebilir.
 3. "Sonraki adım" ve tarih alanı (tarih seçilirse otomatik takip oluşur).
 4. İsteğe bağlı: fırsata bağla veya yeni fırsat aç.
@@ -152,12 +151,16 @@ Takip tarihi: 28.11.2026
 - Teklif detayında "Takip ayarları": bu teklife özel takip günleri (varsayılan ayarlardan gelir)
 - Durum değişince (kazanıldı/kaybedildi) bekleyen takipler iptal edilir; kaybedildi için sebep sorulur
 
-**6. Harita ve bölge**
+**6. Bölge**
 
-- MapKit haritası; pin rengi duruma, pin boyutu değerlendirmeye göre
-- Üstte şehir seçici (kullanıcının bölgesindeki şehirler) ve filtreler: teklif bekleyen, uzun süredir ziyaret edilmeyen, aday
-- Pin → müşteri kartı → Apple Haritalar'da yol tarifi
-- Haftalık plan: günlere şehir ata (ör. Salı Bursa); o günün şehri için önerilen ziyaret listesi (gecikmiş takipler + ziyaret sıklığı aşılanlar + Potansiyelli müşteriler)
+Harita, konum ve yol tarifi **kapsam dışıdır** (MapKit/CLGeocoder kullanılmaz; konum izni istenmez). `Customer.latitude/longitude` alanları şemada kalır ama kullanılmaz. Sekme adı ve simgesi "Bölge"dir; ekran üç seviyelidir:
+
+- **Şehirler:** Ayarlar'daki sorumlu şehirler (aynı sırayla; müşterisi olmayan da listelenir) + varsa bölge dışı şehirler ve şehri boş müşteriler. Her satırda müşteri sayısı, bekleyen (Gönderildi/Takipte) teklif sayısı ve gecikmiş takip sayısı.
+- **İlçeler:** Şehre dokununca müşterisi olan ilçeler ve ilçe başına müşteri sayısı (+ aynı özet); ilçesi boş olanlar "İlçe belirtilmemiş" satırında.
+- **Müşteriler:** İlçeye dokununca ilçedeki müşteriler OSB'ye göre gruplu listelenir; OSB'si olmayanlar en sonda "OSB belirtilmemiş" grubunda. Satırdan müşteri detayı açılır.
+- **Filtreler (her seviyede, birlikte VE ile):** durum (Mevcut / Aday / Pasif), değerlendirme (Önemli / Potansiyelli / Zayıf), teklif bekleyen, ziyaret sıklığı aşılan (son ziyaretten bu yana geçen gün ≥ değerlendirmenin eşiği; pasifler hariç), migrasyon fırsatı olan. Sayılar filtreye göre değişir.
+- **İlçe listeleri:** Çanakkale, Balıkesir, Bursa, Bilecik, Yalova, Eskişehir, Kütahya ve Afyonkarahisar'ın resmi ilçeleri uygulamaya gömülüdür. Müşteri formunda ilçe seçilen şehrin listesinden seçilir; listede yoksa "Diğer…" ile elle yazılır. Listede olmayan (sonradan eklenen) şehirde ilçe serbest metindir. Mevcut kayıtlardaki ilçeler listeyle büyük/küçük harf ve Türkçe karakter duyarsız eşleştirilir ("Nilufer" → "Nilüfer"); eşleşmeyenler olduğu gibi kalır. Müşteriler listesine ilçe filtresi de eklenir.
+- Haftalık şehir planı (günlere şehir atama ve önerilen ziyaret listesi) bu turda yapılmadı; ayrıca istenirse eklenir.
 
 ## Hatırlatma motoru ve ayarlar
 
@@ -278,8 +281,8 @@ Altı faz sırayla gelir; her faz bittiğinde uygulama TestFlight'ta kullanılab
 
 **Faz 3 – Bölge**
 
-- [ ] Harita, pin renkleri ve filtreler
-- [ ] CSV ile toplu müşteri içe aktarma ve adresten koordinat
+- [ ] Bölge sekmesi: şehir → ilçe → OSB'ye göre müşteri listesi ve filtreler; resmi ilçe listeleri
+- [ ] CSV ile toplu müşteri içe aktarma
 - [ ] Ziyaret sıklığı uyarıları değerlendirmeye göre çalışıyor
 - [ ] Haftalık şehir planı ve günlük önerilen ziyaret listesi
 - [ ] Kurulu baz ve "Migrasyon fırsatı" etiketi

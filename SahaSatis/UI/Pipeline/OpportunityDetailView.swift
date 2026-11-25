@@ -11,6 +11,7 @@ struct OpportunityDetailView: View {
     @State private var askingLostReason = false
     @State private var lostReasonText = ""
     @State private var visitTarget: Visit?
+    @State private var showingNewQuote = false
     @State private var errorMessage: String?
 
     private var service: OpportunityService {
@@ -48,6 +49,9 @@ struct OpportunityDetailView: View {
         }
         .sheet(isPresented: $showingEdit) {
             OpportunityFormView(context: context, opportunity: opportunity, customer: nil)
+        }
+        .sheet(isPresented: $showingNewQuote) {
+            QuoteFormView(context: context, quote: nil, customer: opportunity.customer, opportunity: opportunity)
         }
         .sheet(item: $visitTarget) { visit in
             VisitFormView(context: context, customer: visit.customer, visit: visit)
@@ -181,21 +185,27 @@ struct OpportunityDetailView: View {
         Section("Bağlı teklifler") {
             let quotes = (opportunity.quotes ?? []).sorted { $0.date > $1.date }
             if quotes.isEmpty {
-                Text("Henüz teklif yok. Teklifler bir sonraki adımda eklenecek.")
+                Text("Bu fırsata bağlı teklif yok.")
                     .font(.callout)
                     .foregroundStyle(Theme.textSecondary)
             } else {
                 ForEach(quotes) { quote in
-                    HStack {
-                        Text(quote.quoteNumber.isEmpty ? "Teklif" : quote.quoteNumber)
-                            .foregroundStyle(Theme.textPrimary)
-                        Spacer()
-                        Text(quote.status.title)
-                            .font(.caption)
-                            .foregroundStyle(Theme.textSecondary)
+                    NavigationLink(value: quote) {
+                        QuoteRow(
+                            quote: quote,
+                            expiry: QuoteListing.expiryState(
+                                for: quote, warningDays: context.settings.quoteExpiryWarningDays, now: Date(), calendar: .current
+                            ),
+                            showCustomer: false
+                        )
                     }
                 }
             }
+            Button { showingNewQuote = true } label: {
+                Label("Teklif ekle", systemImage: "plus")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
         }
         .listRowBackground(Theme.surface)
     }

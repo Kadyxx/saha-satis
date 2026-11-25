@@ -87,8 +87,8 @@ Sekiz SwiftData modeli var; merkezde `Customer` durur, diğerleri ona bağlanır
 | `InstalledProduct` (Kurulu baz) | catalogNumber (ör. 1756-L71), productFamily, quantity, lifecycleStatus (`active` / `activeMature` / `endOfLife` / `discontinued`), notes | customer |
 | `Visit` (Ziyaret) | date, type (`visit` / `phone` / `online`), transcript (ham ses metni), summary (düzenlenmiş not), topic (konu: tek satır, isteğe bağlı), topics, nextStep, nextStepDate, exportedToCRM (Bool), exportedAt | customer, contacts, opportunity? |
 | `Opportunity` (Fırsat) | title, description, estimatedValue, currency, stage (`lead` / `qualified` / `quoted` / `negotiation` / `won` / `lost`), expectedCloseDate, lostReason | customer, quotes, visits |
-| `Quote` (Teklif) | quoteNumber, date, validUntil, currency, totalAmount (kalemlerden hesaplanır), status (`draft` / `sent` / `followUp` / `won` / `lost`), followUpDays (bu teklife özel; boşsa ayarlardaki varsayılan), notes | customer, opportunity?, items, tasks |
-| `QuoteItem` (Teklif kalemi) | catalogNumber, description, quantity, unitPrice, discountPercent, lineTotal (hesaplanan) | quote |
+| `Quote` (Teklif) | quoteNumber, date, validUntil, currency, totalAmount (kalemlerden hesaplanır), status (`draft` / `sent` / `followUp` / `won` / `lost`), followUpDays (bu teklife özel; boşsa ayarlardaki varsayılan), sentAt (gönderildiği an; takip günleri buradan sayılır), lostReason (kaybedildiyse sebep), notes | customer, opportunity?, items, tasks |
+| `QuoteItem` (Teklif kalemi) | catalogNumber, description, quantity, unitPrice, discountPercent, position (form sırası), lineTotal (hesaplanan, kuruşa yuvarlı) | quote |
 | `FollowUpTask` (Takip / görev) | title, dueDate, isDone, doneAt, source (`manual` / `visitNextStep` / `quoteFollowUp` / `quoteExpiry` / `visitFrequency` / `opportunityClose`), notificationID | customer?, quote?, visit?, opportunity? |
 
 Ayarlar (`AppSettings`) UserDefaults'ta App Group altında tutulur; ayrıntı "Hatırlatma motoru" bölümünde.
@@ -147,6 +147,8 @@ Takip tarihi: 28.11.2026
 - Fırsat formu: müşteri, başlık, açıklama, tahmini tutar, para birimi (varsayılan ayarlardan), aşama, beklenen kapanış tarihi; Kaybedildi seçilince kayıp sebebi sorulur
 - Fırsat detayı: bilgiler, aşama değiştirme, bağlı ziyaretler ve teklifler; kapanış tarihi yaklaşınca hatırlatma, Kazanıldı/Kaybedildi olunca iptal
 - Teklif formu: no, tarih, geçerlilik, para birimi, kalemler (katalog no, açıklama, adet, birim fiyat, iskonto), toplam otomatik
+- Teklif listesi: duruma göre filtre (Taslak, Gönderildi, Takipte, Kazanıldı, Kaybedildi); geçerliliği yaklaşan (veya dolan) bekleyen teklifler üstte ve vurgulu
+- Teklif durumu Gönderildi olunca takip görevleri ve geçerlilik uyarısı oluşur; Kazanıldı / Kaybedildi / Taslak olunca bekleyen tümü iptal; kazanılınca bağlı fırsat için "Kazanıldı olsun mu?" sorulur
 - Teklif detayında "Takip ayarları": bu teklife özel takip günleri (varsayılan ayarlardan gelir)
 - Durum değişince (kazanıldı/kaybedildi) bekleyen takipler iptal edilir; kaybedildi için sebep sorulur
 

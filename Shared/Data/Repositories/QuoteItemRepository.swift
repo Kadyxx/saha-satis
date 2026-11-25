@@ -3,7 +3,7 @@ import SwiftData
 
 @MainActor
 protocol QuoteItemRepository {
-    /// Eklenme sırasına göre.
+    /// Form sırasına göre (`position`, eşitlikte eklenme sırası).
     func items(for quote: Quote) throws -> [QuoteItem]
     func item(id: UUID) throws -> QuoteItem?
     func add(_ item: QuoteItem, to quote: Quote) throws
@@ -24,7 +24,7 @@ final class SwiftDataQuoteItemRepository: QuoteItemRepository {
     func items(for quote: Quote) throws -> [QuoteItem] {
         try context.fetchAll(QuoteItem.self)
             .filter { $0.quote?.id == quote.id }
-            .sorted { $0.createdAt < $1.createdAt }
+            .sorted { ($0.position, $0.createdAt) < ($1.position, $1.createdAt) }
     }
 
     func item(id: UUID) throws -> QuoteItem? {

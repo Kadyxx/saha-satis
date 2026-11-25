@@ -26,6 +26,8 @@ struct CustomerDetailView: View {
     @State private var visits: [Visit] = []
     @State private var opportunities: [Opportunity] = []
     @State private var showingNewOpportunity = false
+    @State private var quotes: [Quote] = []
+    @State private var showingNewQuote = false
     @State private var visitTarget: VisitEditTarget?
     @State private var visitToDelete: Visit?
     @State private var showingEdit = false
@@ -41,6 +43,7 @@ struct CustomerDetailView: View {
                 notesSection
                 visitsSection
                 opportunitiesSection
+                quotesSection
                 installedBaseSection
             }
             .task {
@@ -70,6 +73,9 @@ struct CustomerDetailView: View {
             reloadOpportunities()
         }
         .onReceive(NotificationCenter.default.publisher(for: .appDataDidChange)) { _ in reloadOpportunities() }
+        .sheet(isPresented: $showingNewQuote, onDismiss: reloadOpportunities) {
+            QuoteFormView(context: appContext, quote: nil, customer: customer, onSaved: reloadOpportunities)
+        }
         .sheet(isPresented: $showingNewOpportunity, onDismiss: reloadOpportunities) {
             OpportunityFormView(context: appContext, opportunity: nil, customer: customer, onSaved: reloadOpportunities)
         }
@@ -245,6 +251,35 @@ struct CustomerDetailView: View {
         .listRowBackground(Theme.surface)
     }
 
+    /// Müşterinin teklifleri (geçerliliği yaklaşanlar önce); satıra dokununca teklif detayı açılır.
+    private var quotesSection: some View {
+        Section("Teklifler") {
+            if quotes.isEmpty {
+                Text("Bu müşteri için teklif yok.")
+                    .font(.callout)
+                    .foregroundStyle(Theme.textSecondary)
+            } else {
+                ForEach(quotes) { quote in
+                    NavigationLink(value: quote) {
+                        QuoteRow(quote: quote, expiry: expiry(of: quote), showCustomer: false)
+                    }
+                }
+            }
+            Button { showingNewQuote = true } label: {
+                Label("Teklif ekle", systemImage: "plus")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private func expiry(of quote: Quote) -> QuoteExpiryState {
+        QuoteListing.expiryState(
+            for: quote, warningDays: settings.quoteExpiryWarningDays, now: Date(), calendar: .current
+        )
+    }
+
     private func emptySection(title: String, message: String) -> some View {
         Section(title) {
             Text(message)
@@ -283,6 +318,11 @@ struct CustomerDetailView: View {
     private func reloadOpportunities() {
         let all = (try? repositories.opportunities.opportunities(for: customer)) ?? []
         opportunities = PipelineGrouping.groups(from: all).flatMap(\.opportunities)
+        let allQuotes = (try? repositories.quotes.quotes(for: customer)) ?? []
+        let sections = QuoteListing.make(
+            quotes: allQuotes, filter: nil, warningDays: settings.quoteExpiryWarningDays, now: Date(), calendar: .current
+        )
+        quotes = sections.approaching + sections.others
     }
 
     private func reloadContacts() {

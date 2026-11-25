@@ -410,6 +410,66 @@ SPEC palet tablosuna eklendi; yalnızca `TodayView`'daki kaydırma düğmelerind
     **Elle denenmesi gerekenler:** grup başlığına dokunarak açma/kapama, Kaybedildi seçince sebep penceresi, tutar
     klavyesi (`.decimalPad` Türkçe cihazda virgül verir), ziyaret formundaki fırsat seçici.
 
+## Faz 2 — Teklifler — kararlar
+
+1. **Veri.** `Quote.lostReason` ("Kaybedildi'de sebep sorulsun" için; SPEC'te yoktu) ve `Quote.sentAt` (takip günleri
+   gönderim anından sayılır; teklif tarihi gönderim tarihi değildir), `QuoteItem.position` (kalem sırası; `Quote.sortedItems`
+   ve `items(for:)` önce `position`'a, eşitlikte eklenme sırasına göre). Hepsi varsayılan değerli, hafif şema geçişi.
+   `QuoteItem.lineTotal` ve `Quote.totalAmount` artık **kuruşa yuvarlı** (`Money.rounded`): ekrandaki satır toplamlarının
+   toplamı genel toplamla tutsun. `Quote.subtotalAmount` iskontosuz toplam. Tutarlar ekranda **iki kuruş haneli**
+   (`AppFormat.moneyExact`, "1.250,50 ₺"); fırsat/özet gibi yerlerde eskisi gibi kuruşsuz.
+2. **Durumlar.** Taslak → Gönderildi → Takipte → Kazanıldı / Kaybedildi; durum detaydan menüyle seçilir (yeni teklif Taslak
+   açılır). **Gönderildi ve Takipte "bekleyen"dir** (`QuoteStatus.isPending`): takip/uyarı görevleri, listede geçerlilik
+   vurgusu ve widget'taki bekleyen teklif sayısı yalnızca bunlar için. "Takipte"ye geçiş görev üretmez/değiştirmez
+   (Gönderildi'de kurulanlar sürer); Taslak'tan doğrudan Takipte'ye geçilirse de ilk bekleyen geçiş sayıldığı için görevler kurulur.
+3. **Takip görevleri (`QuoteReminderService`, `TaskSource.quoteFollowUp`).** Bekleyen duruma **ilk** geçişte `sentAt = şimdi`,
+   görevler = gönderim günü + gün listesi, hatırlatma saatinde. Gün listesi: teklifin `followUpDays`'i doluysa o, boşsa
+   Ayarlar'daki (varsayılan 3 ve 7). Geçmişte kalan günler için görev kurulmaz. Başlık "Teklif takibi: <no> · 3. gün";
+   bildirim başlığı müşteri adı. Kazanıldı / Kaybedildi / Taslak olunca **bekleyen tüm takip ve uyarı görevleri silinir**
+   (tamamlananlar geçmişte kalır); Kaybedildi/Kazanıldı'dan bekleyen duruma dönülürse `sentAt` yenilenir ve görevler yeniden kurulur;
+   Taslak'a dönünce `sentAt` temizlenir (yeniden gönderilince sayaç baştan).
+4. **Geçerlilik uyarısı (`TaskSource.quoteExpiry`).** `validUntil` − X gün (Ayarlar → Teklifler, varsayılan 3, aç/kapa),
+   hatırlatma saatinde; X günden az kaldıysa bugüne çekilir; geçerlilik günü geçmişse veya tarih yoksa kurulmaz. Yalnızca
+   bekleyen tekliflerde. Form kaydında tarih değişirse açık uyarı yeni tarihe taşınır.
+5. **Tazeleme kuralları** (fırsat hatırlatmasıyla aynı mantık): kullanıcı işlemlerinde `refresh` (durum değişimi, gün listesi
+   değişimi, form kaydı), her hatırlatma hesaplamasında `sync` (**eksiği kurar, geçersizi siler, var olan açık göreve
+   dokunmaz**; kullanıcı ertelemiş olabilir). Takip için `sync` yalnızca teklifin hiç takip görevi (açık/tamam) yoksa kurar.
+   Takip günleri değişince açık takipler silinip yeniden kurulur; **tamamlanmış** bir günün görevi aynı vade için yeniden
+   kurulmaz. Ayarlardaki varsayılan günler sonradan değişirse mevcut görevler değişmez.
+6. **Takip ayarları** (teklif detayı): "Ayarlardaki günleri kullan (3, 7)" anahtarı; kapatınca teklife özel günler
+   düzenlenir ("Günleri uygula" veya Return). Geçersiz/tekrarlı günler (1–365 dışı) atılır; boş = varsayılan. Altında kurulu
+   açık hatırlatmalar listelenir.
+7. **Kazanıldı + fırsat.** Teklif Kazanıldı olunca bağlı fırsat varsa ve Kazanıldı değilse **onay penceresi** çıkar ("Evet,
+   '…' Kazanıldı olsun" / "Hayır, fırsat kalsın"); Evet → `OpportunityService.setStage(.won)` (fırsatın kapanış hatırlatması da iptal
+   olur). Hayır'da fırsata dokunulmaz. **Kaybedildi**'de sebep penceresi (isteğe bağlı sebep); fırsata dokunulmaz.
+8. **Liste.** Fırsat/Teklif → Teklifler: yatay durum çipleri "Tümü (n), Taslak (n), Gönderildi (n), Takipte (n),
+   Kazanıldı (n), Kaybedildi (n)". **Geçerliliği yaklaşan bölümü** (bekleyen + bitişe ≤ X gün kalan **veya süresi dolmuş**; X =
+   Ayarlar'daki uyarı günü) en üstte, turuncu zeminli, "Geçerlilik: 2 gün kaldı" kalın + uyarı simgesi (süresi dolmuşsa kırmızı
+   "Süresi dün doldu"); sıra: en çok gecikmiş/en yakın önce. Altında "Diğer teklifler" teklif tarihine göre yeniden eskiye.
+   Filtre seçiliyken de aynı bölümleme uygulanır. Satır: no, toplam, müşteri, durum rozeti, geçerlilik.
+9. **Form.** Teklif no (yeni teklifte **"T-2026-001" biçiminde öneri**: yıl içindeki en büyük sıra + 1; düzenlenebilir, benzersizlik
+   zorlanmaz), tarih, geçerlilik (anahtar; varsayılan bir ay), müşteri (düzenlemede sabit), bağlı fırsat (müşterinin açık
+   fırsatları + bağlı olan; fırsat detayından açılırsa seçili gelir), para birimi (varsayılan Ayarlar'dan), kalemler, notlar.
+   Her kalem ayrı bölüm: katalog no, açıklama, adet (≥1 tam sayı), birim fiyat, iskonto % (0–100), satır toplamı canlı.
+   **Kalem ekle**; kalem başlığındaki ⋯ menüsünden **yukarı/aşağı taşı** ve **sil** (sürükle-bırak yerine bu menü seçildi:
+   Form içinde metin alanlarıyla düzenleme modu çakışıyor). Altta ara toplam, iskonto, genel toplam. Tamamen boş satırlar
+   kaydedilirken atılır; geçersiz satır (kırmızı) kaydı engeller. Kalemler yerinde güncellenir (kimlik korunur).
+10. **Listelendiği yerler.** Müşteri detayı → "Teklifler" (yaklaşanlar önce) + "+ Teklif ekle"; fırsat detayı → "Bağlı teklifler"
+    (+ Teklif ekle: müşteri ve fırsat seçili). Üç gezinme yığını (Fırsat/Teklif, Müşteriler) `Quote` hedefini bilir.
+11. **Widget.** Büyük widget'ın bekleyen teklif sayısı/toplamı zaten depodan okunuyordu (`WidgetDataLoader`: Gönderildi + Takipte,
+    para birimi başına toplam); teklifler artık gerçekten girilebildiği için gerçek veriden gelir. Teklif kaydı da
+    `reloadAllTimelines()` tetikler (repository kaydı). Testle doğrulandı (durum değişince sayı/toplam düşer).
+12. **Ayarlar.** Yeni alan yok (takip günleri ve geçerlilik uyarısı alanları Ayarlar → Teklifler'de zaten vardı; artık
+    kullanılıyor, fırsat bölümü varsayılan para birimini sağlıyor).
+13. **Ekran görüntüleri (DEBUG):** `quotes` (liste), `quoteDetail`, `quoteForm` (kalemli teklif düzenleme), açık/koyu; örnek veride 6 teklif
+    (geçerliliği 2 gün kalan, süresi dolmuş, taslak USD, kazanılmış, kaybedilmiş…). Bugün/`detail`/`opportunityDetail`
+    görüntüleri yeni teklif ve hatırlatmalarla yenilenir.
+14. **Yapılmayanlar:** PDF/e-posta ile teklif gönderme, teklif kopyalama, kalemleri katalogdan seçme, KDV/vergi, teklif
+    numarası benzersizliği, sürükle-bırak sıralama, Takipte'ye otomatik geçiş (ilk takip tamamlanınca), fırsat aşamasını
+    teklif gönderilince otomatik "Teklif verildi"ye çekme.
+    **Elle denenmesi gerekenler:** kalem alanlarında klavye (adet `numberPad`, tutarlar `decimalPad`) ve form kaydırması,
+    ⋯ menüsüyle taşıma, durum menüsü + Kaybedildi/Kazanıldı pencereleri, vurgulu satır renkleri açık/koyu modda.
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

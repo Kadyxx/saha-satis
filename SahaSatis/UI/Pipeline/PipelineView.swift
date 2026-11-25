@@ -1,5 +1,10 @@
 import SwiftUI
 
+private struct QuoteFormTarget: Identifiable {
+    let id = UUID()
+    let quote: Quote?
+}
+
 private struct OpportunityFormTarget: Identifiable {
     let id = UUID()
     let opportunity: Opportunity?
@@ -14,6 +19,8 @@ struct PipelineView: View {
 
     @EnvironmentObject private var appContext: AppContext
     @State private var model: PipelineModel
+    @State private var quoteModel: QuoteListModel
+    @State private var quoteFormTarget: QuoteFormTarget?
     @State private var segment: PipelineSegment = .opportunities
     @State private var path = NavigationPath()
     @State private var formTarget: OpportunityFormTarget?
@@ -23,6 +30,9 @@ struct PipelineView: View {
         self.repositories = repositories
         self.debugScene = debugScene
         _model = State(initialValue: PipelineModel(repositories: repositories))
+        _quoteModel = State(initialValue: QuoteListModel(repositories: repositories))
+        let quoteScenes: [DebugScene] = [.quotes, .quoteDetail, .quoteForm]
+        _segment = State(initialValue: debugScene.map { quoteScenes.contains($0) } == true ? .quotes : .opportunities)
     }
 
     var body: some View {
@@ -43,20 +53,30 @@ struct PipelineView: View {
                 }
             }
             .background(Theme.background)
-            .visitButton(onSaved: { model.reload() })
+            .visitButton(onSaved: { reloadAll() })
             .navigationTitle("Fırsat/Teklif")
             .toolbar {
-                if segment == .opportunities {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button { formTarget = OpportunityFormTarget(opportunity: nil, customer: nil) } label: {
-                            Image(systemName: "plus")
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        if segment == .opportunities {
+                            formTarget = OpportunityFormTarget(opportunity: nil, customer: nil)
+                        } else {
+                            quoteFormTarget = QuoteFormTarget(quote: nil)
                         }
-                        .accessibilityLabel("Fırsat ekle")
+                    } label: {
+                        Image(systemName: "plus")
                     }
+                    .accessibilityLabel(segment == .opportunities ? "Fırsat ekle" : "Teklif ekle")
                 }
             }
             .navigationDestination(for: Opportunity.self) { opportunity in
                 OpportunityDetailView(opportunity: opportunity, context: appContext)
+            }
+            .navigationDestination(for: Quote.self) { quote in
+                QuoteDetailView(quote: quote, context: appContext)
+            }
+            .sheet(item: $quoteFormTarget, onDismiss: { reloadAll() }) { target in
+                QuoteFormView(context: appContext, quote: target.quote, onSaved: { reloadAll() })
             }
             .sheet(item: $formTarget, onDismiss: { model.reload() }) { target in
                 OpportunityFormView(
@@ -72,8 +92,8 @@ struct PipelineView: View {
                 Text(model.errorMessage ?? "")
             }
         }
-        .onAppear { model.reload() }
-        .onReceive(NotificationCenter.default.publisher(for: .appDataDidChange)) { _ in model.reload() }
+        .onAppear { reloadAll() }
+        .onReceive(NotificationCenter.default.publisher(for: .appDataDidChange)) { _ in reloadAll() }
         .task { await runDebugSceneIfNeeded() }
     }
 
@@ -145,14 +165,12 @@ struct PipelineView: View {
     // MARK: - Teklifler
 
     private var quotesContent: some View {
-        ContentUnavailableView {
-            Label("Teklifler", systemImage: "doc.text")
-                .foregroundStyle(Theme.textPrimary)
-        } description: {
-            Text("Teklif formu ve listesi bir sonraki adımda eklenecek.")
-                .foregroundStyle(Theme.textSecondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        QuoteListView(model: quoteModel, warningDays: appContext.settings.quoteExpiryWarningDays)
+    }
+
+    private func reloadAll() {
+        model.reload()
+        quoteModel.reload(warningDays: appContext.settings.quoteExpiryWarningDays)
     }
 
     private var errorBinding: Binding<Bool> {
@@ -164,10 +182,15 @@ struct PipelineView: View {
     /// `SampleData`'daki örnek fırsatın başlığı (SampleData yalnızca DEBUG derlemesinde var).
     private static let showcaseTitle = "Hat 3 PLC yenileme"
 
+    /// Örnek veride kalem içeren, bağlı fırsatlı gönderilmiş teklif (`SampleData`; yalnızca DEBUG'da var).
+    private func showcaseQuote() -> Quote? {
+        (try? repositories.quotes.fetchAll())?.first { $0.quoteNumber == "T-2026-014" }
+    }
+
     private func runDebugSceneIfNeeded() async {
         guard let scene = debugScene, !didRunDebugScene else { return }
         didRunDebugScene = true
-        model.reload()
+        reloadAll()
         let all = (try? repositories.opportunities.fetchAll()) ?? []
         switch scene {
         case .opportunityDetail:
@@ -180,6 +203,10 @@ struct PipelineView: View {
             if let lost = all.first(where: { $0.stage == .lost }) {
                 formTarget = OpportunityFormTarget(opportunity: lost, customer: nil)
             }
+        case .quoteDetail:
+            if let quote = showcaseQuote() { path.append(quote) }
+        case .quoteForm:
+            if let quote = showcaseQuote() { quoteFormTarget = QuoteFormTarget(quote: quote) }
         default:
             break
         }

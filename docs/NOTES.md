@@ -470,6 +470,44 @@ SPEC palet tablosuna eklendi; yalnızca `TodayView`'daki kaydırma düğmelerind
     **Elle denenmesi gerekenler:** kalem alanlarında klavye (adet `numberPad`, tutarlar `decimalPad`) ve form kaydırması,
     ⋯ menüsüyle taşıma, durum menüsü + Kaybedildi/Kazanıldı pencereleri, vurgulu satır renkleri açık/koyu modda.
 
+## Ekran görüntüsü düzeltmeleri + widget/ziyaret formu (kararlar)
+
+1. **"+ Ziyaret" butonu.** `safeAreaInset` içeriğin son satırlarını yine de kapatıyordu; buton artık `overlay` (sağ alt) ve
+   kaydırılabilir içeriğin alt boşluğu `contentMargins(.bottom, 76, for: .scrollContent)` ile buton yüksekliği kadar
+   artırıldı (`VisitButtonModifier.reservedHeight`). Buton **Ayarlar ve Şehirler ekranlarından kaldırıldı**; form/sheet
+   ekranlarında zaten yok (butonu yalnızca liste/detay kökleri ve Harita yer tutucusu kullanır, sheet ayrı sunum hiyerarşisidir).
+2. **CRM başlığı "=== ZİYARET n ===".** Büyük harf elle yazıldığı için noktalı İ de elle yazıldı (SPEC örneği dahil). Test:
+   `testBlockHeaderUsesTurkishDottedCapitalI` (başlık tam eşitlik + `uppercased(with: tr_TR)` ile aynı + düz "ZIYARET" yok).
+3. **Tutar alanları binlik ayraçlı.** `AmountTextField` (FormFields) yazarken `AmountParser.formatTyping` ile biçimler:
+   noktalar binlik sayılıp yeniden hesaplanır, virgül ondalık (en çok 2 hane, sondaki virgül korunur), sona yeni yazılan tek nokta
+   ondalığa çevrilir, yabancı karakterler atılır. Düzenleme açılışı `groupedEditingText` ("480.000", "142.500"). Kaydederken
+   metin `AmountParser.parse` ile sayıya döner (biçimlenmiş metnin gidiş-dönüşü testli). Uygulandığı yerler: fırsat tahmini
+   tutarı ve teklif kalemi birim fiyatı. İskonto % ve adet alanları ayraçsız kaldı. **Bilinen sınır:** imleç yazarken sona atlar
+   (ortadan düzeltme yaparken); klavye, cihaz bölgesine göre "," veya "." tuşunu sunar — ikisi de desteklenir.
+4. **Teklif listesi başlığı** "Geçerlilik uyarısı" (yaklaşanlar + süresi dolanlar).
+5. **Bugün → ziyaret satırı:** saatin altında "Aktarıldı" / "Aktarılmadı" etiketi (simge yine var; durum artık yazıyla da okunur).
+6. **Gezinme çubuğu arka planı:** kaydırınca beyaza dönen şey `AppAppearance`'ta `configureWithDefaultBackground()` (bulanık sistem
+   zemini) idi. `standardAppearance`/`compactAppearance` artık opak ve `background` renginde, gölge çizgisi yok. Bu UIKit
+   görünümü tüm yığınları ve sheet'leri kapsar; ekran başına `toolbarBackground` yazmaya gerek kalmadı (aynı sonuç, tek yer).
+7. **Teklif no çakışma uyarısı:** `QuoteFormModel.duplicateNumberQuote` (büyük/küçük harf ve boşluk yok sayılır; düzenlenen teklifin
+   kendisi hariç). Form başlık bölümünün altında turuncu/kırmızı uyarı + müşteri adı; **kaydetmeyi engellemez**. **"KDV hariç"**
+   notu (`ExcludingVATAmount`): teklif detayında üstteki ve alttaki "Genel toplam", formda "Genel toplam" yanında/altında.
+8. **Ziyaret formu sırası:** Müşteri → Görüşülen kişiler → **Görüşme notu** (büyük yuvarlak mikrofon butonu, canlı metin, durum
+   mesajları, hemen altında not alanı) → Konu → Sonraki adım → Fırsat → Ziyaret tipi/tarih. Kayıtta mikrofon halkalıdır ve
+   yanında Duraklat/Bitir görünür; ayrı "Sesli not" bölümü kalktı. Ekran görüntüleri: `screen-visitForm-*` (not bölümü üstte,
+   dolu) ve `screen-visitRecording-*` (sahte motor canlı metni, mikrofon aktif).
+9. **Kilit ekranı dikdörtgen widget'ı:** 1. satır görev başlığı (kalın, tek satır, öncelikli); 2. satır "Firma · tarih/saat";
+   gecikmişse başta uyarı simgesi ve "Gecikmiş · 23 Kas". Dar yerde önce firma adı kısalır, tarih/saat sabit kalır.
+   "Sıradaki iş" üst satırı kaldırıldı (boş durumda kalır).
+10. **Büyük widget yüksekliği doldurur:** satır yükseklikleri sabit (başlık 16, görev 22, aralık 5); `GeometryReader` ile kalan
+    yüksekliğe sığdığı kadar satır, kalanlar "+N takip daha" (`WeekWidgetLayout.fit`, testli). Sona yalnız kalan gün başlığı
+    atılır. **Not:** yüksekliklere sabit değer verildiği için çok büyük Dynamic Type'ta satırlar kırpılabilir.
+11. **Orta widget:** gecikmiş görevlerin sağında "Gecikmiş" yerine tarih ("23 Kas Pzt", overdue renginde); üstteki
+    "N gecikmiş" sayacı duruyor.
+
+**Elle denenmesi gerekenler (gerçek iPhone):** tutar alanında yazarken ayraç ve imleç davranışı, büyük mikrofon butonu ile izin
+akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büyük widget'ın alt kenarı).
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

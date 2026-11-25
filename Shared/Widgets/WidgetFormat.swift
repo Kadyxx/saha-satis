@@ -40,3 +40,34 @@ enum WidgetFormat {
         count == 0 ? "Tüm ziyaretler aktarıldı" : "\(count) ziyaret CRM'e aktarılmadı"
     }
 }
+
+/// Büyük (haftalık) widget'ın satır sığdırma hesabı: satır yükseklikleri sabittir, kullanılabilir yüksekliğe
+/// sığdığı kadar satır gösterilir; sığmayanlar "+N takip daha" ile belirtilir (saf mantık; testle denenir).
+enum WeekWidgetLayout {
+    static let headerHeight: CGFloat = 16
+    static let taskHeight: CGFloat = 22
+    static let moreHeight: CGFloat = 14
+    static let spacing: CGFloat = 5
+
+    /// - Parameters:
+    ///   - isHeader: Her satır için başlık (true) veya görev (false).
+    ///   - height: Listeye ayrılan toplam yükseklik.
+    /// - Returns: Gösterilecek satır sayısı ve gizli kalan görev sayısı. Sona yalnız kalan gün başlığı atılır;
+    ///   gizli görev varsa "+N takip daha" satırına yer ayrılır.
+    static func fit(isHeader: [Bool], height: CGFloat) -> (shown: Int, hiddenTasks: Int) {
+        var used: CGFloat = 0
+        var shown = 0
+        for (index, header) in isHeader.enumerated() {
+            let lineHeight = header ? headerHeight : taskHeight
+            let next = used + (shown > 0 ? spacing : 0) + lineHeight
+            let isLast = index == isHeader.count - 1
+            let reserve = isLast ? 0 : spacing + moreHeight
+            if next + reserve > height { break }
+            used = next
+            shown += 1
+        }
+        while shown > 0, isHeader[shown - 1] { shown -= 1 }
+        let hidden = isHeader.dropFirst(shown).filter { !$0 }.count
+        return (shown, hidden)
+    }
+}

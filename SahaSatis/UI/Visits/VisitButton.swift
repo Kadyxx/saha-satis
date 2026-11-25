@@ -1,8 +1,12 @@
 import SwiftUI
 
 /// Sağ altta "+ Ziyaret" hızlı butonu (action rengi) ve ziyaret formunu açan sheet.
-/// `safeAreaInset` kullanıldığı için buton listelerin son satırlarını kapatmaz; kaydırırken içeriğin üstünde durur.
+/// Buton içeriğin üstünde yüzer; kaydırılabilir ekranların alt boşluğu (`contentMargins`) buton yüksekliği kadar
+/// artırılır, böylece son satırlar, ok işaretleri ve rozetler butonun altında kalmaz.
 struct VisitButtonModifier: ViewModifier {
+    /// Butonun kapladığı yükseklik (≈46 pt) + alt boşluk + nefes payı.
+    static let reservedHeight: CGFloat = 76
+
     /// Müşteri detayından açılırsa o müşteri seçili gelir.
     let customer: Customer?
     let onSaved: () -> Void
@@ -12,24 +16,22 @@ struct VisitButtonModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                HStack {
-                    Spacer()
-                    Button {
-                        isPresenting = true
-                    } label: {
-                        Label("Ziyaret", systemImage: "plus")
-                            .font(.headline)
-                            .foregroundStyle(Theme.onAction)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 12)
-                            .background(Theme.action, in: Capsule())
-                            .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
-                    }
-                    .accessibilityLabel("Ziyaret ekle")
+            .contentMargins(.bottom, Self.reservedHeight, for: .scrollContent)
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    isPresenting = true
+                } label: {
+                    Label("Ziyaret", systemImage: "plus")
+                        .font(.headline)
+                        .foregroundStyle(Theme.onAction)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 12)
+                        .background(Theme.action, in: Capsule())
+                        .shadow(color: .black.opacity(0.2), radius: 4, y: 2)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .accessibilityLabel("Ziyaret ekle")
+                .padding(.trailing, 16)
+                .padding(.bottom, 12)
             }
             .sheet(isPresented: $isPresenting) {
                 VisitFormView(context: context, customer: customer, visit: nil, onSaved: onSaved)
@@ -38,7 +40,7 @@ struct VisitButtonModifier: ViewModifier {
 }
 
 extension View {
-    /// Ekranın sağ altına "+ Ziyaret" butonu ekler.
+    /// Ekranın sağ altına "+ Ziyaret" butonu ekler (Ayarlar ve form/sheet ekranlarında kullanılmaz).
     func visitButton(customer: Customer? = nil, onSaved: @escaping () -> Void = {}) -> some View {
         modifier(VisitButtonModifier(customer: customer, onSaved: onSaved))
     }

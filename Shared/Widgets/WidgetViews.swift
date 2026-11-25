@@ -95,7 +95,7 @@ struct TodayTasksWidgetView: View {
                     WidgetTaskRow(
                         task: row.task,
                         isOverdue: row.isOverdue,
-                        trailing: row.isOverdue ? "Gecikmiş" : AppFormat.time(row.task.dueDate)
+                        trailing: row.isOverdue ? AppFormat.shortDay(row.task.dueDate) : AppFormat.time(row.task.dueDate)
                     )
                 }
                 if rows.count > Self.maxRows {
@@ -116,8 +116,6 @@ struct TodayTasksWidgetView: View {
 struct WeekWidgetView: View {
     let snapshot: WidgetSnapshot
     var calendar: Calendar = .current
-    static let maxLines = 9
-
     private enum Line: Identifiable {
         case header(String, isOverdue: Bool)
         case task(WidgetTask, isOverdue: Bool, trailing: String)
@@ -146,11 +144,6 @@ struct WeekWidgetView: View {
 
     var body: some View {
         let lines = allLines
-        let shown = Array(lines.prefix(Self.maxLines))
-        let hiddenTasks = lines.dropFirst(Self.maxLines).filter {
-            if case .task = $0 { return true }
-            return false
-        }.count
 
         VStack(alignment: .leading, spacing: 5) {
             HStack {
@@ -188,23 +181,37 @@ struct WeekWidgetView: View {
                     .frame(maxWidth: .infinity)
                 Spacer(minLength: 0)
             } else {
-                ForEach(shown) { line in
-                    switch line {
-                    case .header(let title, let isOverdue):
-                        Text(title)
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(isOverdue ? Theme.overdue : Theme.brandText)
-                            .padding(.top, 2)
-                    case .task(let task, let isOverdue, let trailing):
-                        WidgetTaskRow(task: task, isOverdue: isOverdue, trailing: trailing)
+                // Kalan yüksekliği doldurur: sığdığı kadar satır, kalanlar "+N takip daha".
+                GeometryReader { geometry in
+                    let fit = WeekWidgetLayout.fit(
+                        isHeader: lines.map { line -> Bool in
+                            if case .header = line { return true }
+                            return false
+                        },
+                        height: geometry.size.height
+                    )
+                    VStack(alignment: .leading, spacing: WeekWidgetLayout.spacing) {
+                        ForEach(Array(lines.prefix(fit.shown))) { line in
+                            switch line {
+                            case .header(let title, let isOverdue):
+                                Text(title)
+                                    .font(.caption2.weight(.bold))
+                                    .foregroundStyle(isOverdue ? Theme.overdue : Theme.brandText)
+                                    .frame(height: WeekWidgetLayout.headerHeight, alignment: .bottomLeading)
+                            case .task(let task, let isOverdue, let trailing):
+                                WidgetTaskRow(task: task, isOverdue: isOverdue, trailing: trailing)
+                                    .frame(height: WeekWidgetLayout.taskHeight)
+                            }
+                        }
+                        if fit.hiddenTasks > 0 {
+                            Text("+\(fit.hiddenTasks) takip daha")
+                                .font(.caption2)
+                                .foregroundStyle(Theme.textSecondary)
+                                .frame(height: WeekWidgetLayout.moreHeight)
+                        }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
-                if hiddenTasks > 0 {
-                    Text("+\(hiddenTasks) takip daha")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.textSecondary)
-                }
-                Spacer(minLength: 0)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -223,21 +230,30 @@ struct NextTaskWidgetView: View {
     var body: some View {
         Group {
             if let task = snapshot.next {
-                VStack(alignment: .leading, spacing: 1) {
+                // 1. satır: görev başlığı (kalın, öncelikli). 2. satır: "Firma · tarih/saat"; gecikmişse uyarı
+                // simgesi ve "Gecikmiş · 23 Kas". Dar yerde önce firma adı kısalır.
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(task.title)
+                        .font(.caption.weight(.bold))
+                        .lineLimit(1)
+                        .layoutPriority(2)
                     HStack(spacing: 3) {
                         if snapshot.nextIsOverdue {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .accessibilityLabel("Gecikmiş")
                         }
-                        Text("Sıradaki iş")
+                        if let name = task.customerName {
+                            Text(name)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
+                            Text("·")
+                        }
+                        Text(WidgetFormat.dueText(for: task, now: snapshot.date, calendar: calendar))
+                            .lineLimit(1)
+                            .fixedSize()
+                            .layoutPriority(1)
                     }
-                    .font(.caption2.weight(.semibold))
-                    Text(headline(task))
-                        .font(.caption.weight(.semibold))
-                        .lineLimit(2)
-                    Text(WidgetFormat.dueText(for: task, now: snapshot.date, calendar: calendar))
-                        .font(.caption2)
-                        .lineLimit(1)
+                    .font(.caption2)
                 }
             } else {
                 VStack(alignment: .leading, spacing: 1) {
@@ -250,11 +266,6 @@ struct NextTaskWidgetView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .widgetURL(snapshot.next.map { WidgetLink.task($0.id).url } ?? WidgetLink.today.url)
-    }
-
-    private func headline(_ task: WidgetTask) -> String {
-        guard let name = task.customerName else { return task.title }
-        return "\(name) – \(task.title)"
     }
 }
 

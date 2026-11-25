@@ -58,7 +58,7 @@ struct QuoteItemRow: Identifiable, Equatable {
         catalogNumber = item.catalogNumber
         itemDescription = item.itemDescription
         quantityText = String(item.quantity)
-        unitPriceText = AmountParser.editingText(item.unitPrice)
+        unitPriceText = AmountParser.groupedEditingText(item.unitPrice)
         discountText = AmountParser.editingText(item.discountPercent)
     }
 }
@@ -84,6 +84,8 @@ final class QuoteFormModel {
     private let repositories: Repositories
     private let reminderRules: QuoteReminderRules
     private let calendar: Calendar
+    /// Bu formdaki teklif dışındaki teklifler (teklif no çakışma uyarısı için).
+    private let otherQuotes: [Quote]
 
     /// - Parameters:
     ///   - opportunity: Yeni teklifte önceden seçili fırsat (fırsat detayından açılınca).
@@ -101,6 +103,7 @@ final class QuoteFormModel {
         self.reminderRules = reminderRules
         self.calendar = calendar
         self.existing = quote
+        self.otherQuotes = ((try? repositories.quotes.fetchAll()) ?? []).filter { $0.id != quote?.id }
         self.date = now
         self.validUntil = calendar.date(byAdding: .day, value: 30, to: now) ?? now
         self.currency = quote?.currency ?? defaultCurrency
@@ -127,6 +130,18 @@ final class QuoteFormModel {
     }
 
     var isEditing: Bool { existing != nil }
+
+    /// Aynı numarayı taşıyan başka bir teklif (büyük/küçük harf ve boşluk farkı yok sayılır). Yalnızca uyarı içindir;
+    /// kaydetmeyi engellemez.
+    var duplicateNumberQuote: Quote? {
+        let key = Self.numberKey(number)
+        guard !key.isEmpty else { return nil }
+        return otherQuotes.first { Self.numberKey($0.quoteNumber) == key }
+    }
+
+    static func numberKey(_ number: String) -> String {
+        VisitText.singleLine(number).uppercased(with: AppFormat.locale)
+    }
 
     /// Müşteri değişince bağlı fırsat seçimi sıfırlanır (fırsatlar müşteriye aittir).
     func customerChanged() {

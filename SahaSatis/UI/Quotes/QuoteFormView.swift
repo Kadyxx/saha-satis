@@ -108,6 +108,16 @@ struct QuoteFormView: View {
                 }
             }
             .pickerStyle(.segmented)
+        } footer: {
+            // Uyarı: aynı numara başka bir teklifte var; kaydetmeyi engellemez.
+            if let other = model.duplicateNumberQuote {
+                Label(
+                    "\"\(VisitText.singleLine(model.number))\" numarası başka bir teklifte de var (\(other.customer?.name ?? "müşteri yok")). Yine de kaydedebilirsiniz.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.footnote)
+                .foregroundStyle(Theme.overdue)
+            }
         }
         .listRowBackground(Theme.surface)
     }
@@ -125,11 +135,7 @@ struct QuoteFormView: View {
                         .accessibilityLabel("Adet")
                 }
                 LabeledContent("Birim fiyat (\(model.currency.symbol))") {
-                    TextField("0", text: binding(rowID, \.unitPriceText))
-                        .multilineTextAlignment(.trailing)
-                        .keyboardType(.decimalPad)
-                        .foregroundStyle(row.unitPrice == nil ? Theme.overdue : Theme.textPrimary)
-                        .accessibilityLabel("Birim fiyat")
+                    AmountTextField(text: binding(rowID, \.unitPriceText), label: "Birim fiyat", isValid: row.unitPrice != nil)
                 }
                 LabeledContent("İskonto (%)") {
                     TextField("0", text: binding(rowID, \.discountText))
@@ -191,9 +197,7 @@ struct QuoteFormView: View {
                 }
             }
             LabeledContent("Genel toplam") {
-                Text(AppFormat.moneyExact(model.total, currency: model.currency))
-                    .font(.headline)
-                    .foregroundStyle(Theme.textPrimary)
+                ExcludingVATAmount(text: AppFormat.moneyExact(model.total, currency: model.currency), font: .headline)
             }
         }
         .listRowBackground(Theme.surface)

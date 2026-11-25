@@ -8,7 +8,10 @@ enum AppAppearance {
         guard let titleColor = UIColor(named: "textPrimary") else { return }
 
         let standard = UINavigationBarAppearance()
-        standard.configureWithDefaultBackground()
+        // Opak ve "background" renginde: kaydırınca sistemin bulanık beyaz/gri zemini çıkmaz (tüm ekranlar ve sheet'ler).
+        standard.configureWithOpaqueBackground()
+        standard.backgroundColor = UIColor(named: "background")
+        standard.shadowColor = .clear
         standard.titleTextAttributes = [.foregroundColor: titleColor]
         standard.largeTitleTextAttributes = [.foregroundColor: titleColor]
 

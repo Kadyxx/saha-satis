@@ -148,9 +148,15 @@ struct TodayView: View {
                                 .foregroundStyle(Theme.textSecondary)
                         }
                         Spacer(minLength: 8)
-                        Text(AppFormat.time(visit.date))
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.textSecondary)
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Text(AppFormat.time(visit.date))
+                                .font(.subheadline)
+                                .foregroundStyle(Theme.textSecondary)
+                            // CRM durumu açık yazılır (yalnızca simgeye güvenilmez).
+                            Text(visit.exportedToCRM ? "Aktarıldı" : "Aktarılmadı")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(visit.exportedToCRM ? Theme.brandText : Theme.textSecondary)
+                        }
                     }
                     .accessibilityElement(children: .combine)
                 }

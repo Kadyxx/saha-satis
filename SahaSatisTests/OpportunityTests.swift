@@ -689,3 +689,101 @@ final class OpportunityServiceTests: XCTestCase {
         XCTAssertEqual(Currency.allCases.map(\.displayName), ["TL", "USD", "EUR"])
     }
 }
+
+/// Tutar alanlarında yazarken binlik ayracı ve kaydederken doğru sayıya dönüş.
+final class AmountTypingFormatTests: XCTestCase {
+    private func typed(_ text: String, previous: String = "") -> String {
+        AmountParser.formatTyping(text, previous: previous)
+    }
+
+    func testGroupsThousandsWhileTyping() {
+        XCTAssertEqual(typed(""), "")
+        XCTAssertEqual(typed("4"), "4")
+        XCTAssertEqual(typed("4800"), "4.800")
+        XCTAssertEqual(typed("480000"), "480.000")
+        XCTAssertEqual(typed("142500"), "142.500")
+        XCTAssertEqual(typed("1250000"), "1.250.000")
+    }
+
+    func testRegroupsWhenAppendingAndDeletingDigits() {
+        XCTAssertEqual(typed("480.0005", previous: "480.000"), "4.800.005")
+        XCTAssertEqual(typed("4.80", previous: "4.800"), "480")
+        XCTAssertEqual(typed("1.25", previous: "1.250"), "125")
+    }
+
+    func testCommaIsDecimalSeparatorAndKeepsTrailingComma() {
+        XCTAssertEqual(typed("1250,"), "1.250,")
+        XCTAssertEqual(typed("1250,5"), "1.250,5")
+        XCTAssertEqual(typed("1250,567"), "1.250,56", "En çok iki ondalık hane")
+        XCTAssertEqual(typed(","), "0,")
+        XCTAssertEqual(typed("0,5"), "0,5")
+        XCTAssertEqual(typed("007"), "7")
+    }
+
+    func testTypedDotAtEndBecomesDecimalSeparator() {
+        XCTAssertEqual(typed("1.250.", previous: "1.250"), "1.250,")
+        XCTAssertEqual(typed("1.", previous: "1"), "1,")
+        XCTAssertEqual(typed("1.", previous: "1.5"), "1", "Silme: nokta ayraç sayılır, ondalığa dönmez")
+    }
+
+    func testDropsForeignCharacters() {
+        XCTAssertEqual(typed("12a3"), "123")
+        XCTAssertEqual(typed("₺ 480000"), "480.000")
+    }
+
+    func testFormattedTextParsesBackToTheRightNumber() {
+        for value in [0.5, 7, 999, 1000, 142_500, 480_000, 1_250_000, 1250.5, 12_345.67] {
+            let shown = AmountParser.groupedEditingText(value)
+            XCTAssertEqual(AmountParser.parse(shown) ?? -1, value, accuracy: 0.0001, shown)
+            XCTAssertEqual(typed(shown, previous: shown), shown, "Biçimlenmiş metin kararlıdır")
+        }
+        XCTAssertEqual(AmountParser.groupedEditingText(480_000), "480.000")
+        XCTAssertEqual(AmountParser.groupedEditingText(142_500), "142.500")
+        XCTAssertEqual(AmountParser.groupedEditingText(0), "")
+    }
+}
+
+/// Büyük widget'ın satır sığdırması: yüksekliği doldurur, taşanı "+N takip daha" yapar.
+final class WeekWidgetLayoutTests: XCTestCase {
+    func testShowsEverythingWhenItFitsWithoutMoreLine() {
+        let kinds = [true, false, false]   // başlık + 2 görev
+        let height = WeekWidgetLayout.headerHeight + 2 * WeekWidgetLayout.taskHeight + 2 * WeekWidgetLayout.spacing
+        let fit = WeekWidgetLayout.fit(isHeader: kinds, height: height)
+        XCTAssertEqual(fit.shown, 3)
+        XCTAssertEqual(fit.hiddenTasks, 0)
+    }
+
+    func testReservesRoomForMoreLineAndCountsHiddenTasks() {
+        let kinds = [true] + Array(repeating: false, count: 10)
+        let fit = WeekWidgetLayout.fit(isHeader: kinds, height: 200)
+        XCTAssertGreaterThan(fit.shown, 1)
+        XCTAssertLessThan(fit.shown, kinds.count)
+        XCTAssertEqual(fit.hiddenTasks, kinds.count - fit.shown)
+        let used = WeekWidgetLayout.headerHeight + CGFloat(fit.shown - 1) * (WeekWidgetLayout.taskHeight + WeekWidgetLayout.spacing)
+            + WeekWidgetLayout.spacing + WeekWidgetLayout.moreHeight
+        XCTAssertLessThanOrEqual(used, 200, "Satırlar + '+N takip daha' satırı yüksekliğe sığmalı")
+    }
+
+    func testTallerWidgetShowsMoreRows() {
+        let kinds = [true] + Array(repeating: false, count: 12)
+        let short = WeekWidgetLayout.fit(isHeader: kinds, height: 150)
+        let tall = WeekWidgetLayout.fit(isHeader: kinds, height: 260)
+        XCTAssertGreaterThan(tall.shown, short.shown)
+    }
+
+    func testDoesNotLeaveALoneDayHeaderAtTheEnd() {
+        // 2 görev + yeni gün başlığı + görev: başlık sığıp görevi sığmıyorsa başlık da gizlenir.
+        let kinds = [true, false, false, true, false]
+        let height = WeekWidgetLayout.headerHeight + 2 * (WeekWidgetLayout.taskHeight + WeekWidgetLayout.spacing)
+            + WeekWidgetLayout.spacing + WeekWidgetLayout.headerHeight + WeekWidgetLayout.spacing + WeekWidgetLayout.moreHeight
+        let fit = WeekWidgetLayout.fit(isHeader: kinds, height: height)
+        XCTAssertEqual(fit.shown, 3)
+        XCTAssertEqual(fit.hiddenTasks, 1)
+    }
+
+    func testEmptyListShowsNothing() {
+        let fit = WeekWidgetLayout.fit(isHeader: [], height: 100)
+        XCTAssertEqual(fit.shown, 0)
+        XCTAssertEqual(fit.hiddenTasks, 0)
+    }
+}

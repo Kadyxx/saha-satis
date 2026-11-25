@@ -127,7 +127,7 @@ Beş sekme var: Bugün, Müşteriler, Fırsat/Teklif, Harita, Ayarlar. Her yerde
 - Her ziyaret ayrı blok, alanlar CRM'e tek tek yapıştırılacak sırada:
 
 ```
-=== ZIYARET 1 ===
+=== ZİYARET 1 ===
 Tarih: 24.11.2026
 Firma: Örnek Makina A.Ş.
 Şehir / İlçe: Bursa / Nilüfer
@@ -191,7 +191,7 @@ Dört widget var: iki ana ekran, iki kilit ekranı. Hepsi aynı SwiftData deposu
 | --- | --- | --- | --- |
 | Bugünün takipleri | Ana ekran, orta (`systemMedium`) | Gecikmiş + bugünün ilk 3–4 görevi: müşteri, görev, saat | Her satırda onay kutusu (`CompleteTaskIntent`); dokununca görev açılır |
 | Haftalık görünüm | Ana ekran, büyük (`systemLarge`) | Bugün + sonraki 6 günün görevleri, bekleyen teklif sayısı ve toplamı, aktarılmamış ziyaret sayısı | Onay kutusu; "+ Ziyaret" butonu uygulamayı kayıt ekranında açar |
-| Sıradaki iş | Kilit ekranı, dikdörtgen (`accessoryRectangular`) | En yakın görev: "X Firması – teklif takibi", saat/tarih; gecikmişse uyarı simgesi | Dokununca görev açılır |
+| Sıradaki iş | Kilit ekranı, dikdörtgen (`accessoryRectangular`) | 1. satır görev başlığı (kalın); 2. satır "Firma · tarih/saat" (gecikmişse uyarı simgesi + "Gecikmiş · 23 Kas"; firma adı kısalabilir) | Dokununca görev açılır |
 | Bekleyen iş sayısı | Kilit ekranı, yuvarlak (`accessoryCircular`) | Bugün + gecikmiş görev sayısı | Dokununca Bugün ekranı |
 
 - Timeline: şu an + her görev saatinde bir giriş, en fazla 24 saatlik; gece yarısı yenilenir.

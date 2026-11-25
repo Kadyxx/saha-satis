@@ -53,6 +53,15 @@ enum Currency: String, Codable, CaseIterable, Sendable {
 
     var code: String { rawValue }
 
+    /// Arayüzde gösterilen kısa ad: TL, USD, EUR.
+    var displayName: String {
+        switch self {
+        case .tl: return "TL"
+        case .usd: return "USD"
+        case .eur: return "EUR"
+        }
+    }
+
     var symbol: String {
         switch self {
         case .tl: return "₺"
@@ -129,6 +138,7 @@ enum TaskSource: String, Codable, CaseIterable, Sendable {
     case quoteFollowUp
     case quoteExpiry
     case visitFrequency
+    case opportunityClose
 
     var title: String {
         switch self {
@@ -137,6 +147,7 @@ enum TaskSource: String, Codable, CaseIterable, Sendable {
         case .quoteFollowUp: return "Teklif takibi"
         case .quoteExpiry: return "Teklif geçerlilik uyarısı"
         case .visitFrequency: return "Ziyaret sıklığı"
+        case .opportunityClose: return "Fırsat kapanış tarihi"
         }
     }
 }

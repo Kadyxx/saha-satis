@@ -26,6 +26,22 @@ enum SampleData {
         try repositories.installedProducts.add(InstalledProduct(catalogNumber: "1756-L71", productFamily: "ControlLogix", quantity: 2), to: ornek)
         try repositories.installedProducts.add(InstalledProduct(catalogNumber: "PLC-5/40", productFamily: "PLC-5", lifecycleStatus: .discontinued), to: ornek)
 
+        // Fırsatlar (hayali). İlk fırsatın başlığı `PipelineView`'daki ekran görüntüsü senaryosuyla eşleşmeli.
+        func inDays(_ days: Double) -> Date { now.addingTimeInterval(days * 86_400) }
+        let hat3 = Opportunity(
+            title: "Hat 3 PLC yenileme", details: "Eski PLC-5 tabanlı hattın ControlLogix'e taşınması; işlemci, G/Ç ve HMI.",
+            estimatedValue: 480_000, currency: .tl, stage: .quoted, expectedCloseDate: inDays(12)
+        )
+        try repositories.opportunities.add(hat3, customer: ornek)
+        try repositories.opportunities.add(
+            Opportunity(title: "Bakım sözleşmesi yenileme", estimatedValue: 120_000, currency: .tl, stage: .negotiation, expectedCloseDate: inDays(20)),
+            customer: ornek
+        )
+        try repositories.opportunities.add(
+            Opportunity(title: "Yedek parça paketi", estimatedValue: 36_000, currency: .tl, stage: .won, expectedCloseDate: inDays(-9)),
+            customer: ornek
+        )
+
         // Ziyaret geçmişi (VisitService: sonraki adım tarihi olan ziyaret bağlı takip görevi üretir)
         let visitService = VisitService(repositories: repositories, reminderMinutes: 9 * 60)
         try visitService.save(
@@ -53,7 +69,7 @@ enum SampleData {
                 nextStep: "Hat 3 için teklif hazırlanacak",
                 nextStepDate: now.addingTimeInterval(3 * 86_400)
             ),
-            customer: ornek, contacts: [ahmet, ayse], existing: nil
+            customer: ornek, contacts: [ahmet, ayse], opportunity: hat3, existing: nil
         )
 
         // 2) Potansiyelli, aday müşteri
@@ -63,6 +79,10 @@ enum SampleData {
             ratingNote: "Yeni dolum hattı yatırımı planlıyorlar."
         )
         try repositories.customers.add(gida)
+        try repositories.opportunities.add(
+            Opportunity(title: "Dolum hattı otomasyonu", estimatedValue: 12_500, currency: .usd, stage: .qualified, expectedCloseDate: inDays(45)),
+            customer: gida
+        )
         try repositories.contacts.add(Contact(fullName: "Mehmet Kaya", title: "Fabrika Müdürü", phone: "+90 555 000 00 03"), to: gida)
         try repositories.visits.add(Visit(date: daysAgo(40)), customer: gida, contacts: [], opportunity: nil)
 
@@ -73,6 +93,11 @@ enum SampleData {
             ratingNote: "Küçük hacimli, yedek parça alıyor."
         )
         try repositories.customers.add(tekstil)
+        let lost = Opportunity(
+            title: "Eski hat revizyonu", estimatedValue: 54_000, currency: .tl, stage: .lost, expectedCloseDate: inDays(-30)
+        )
+        lost.lostReason = "Rakip fiyatı daha düşük kaldı"
+        try repositories.opportunities.add(lost, customer: tekstil)
         try repositories.visits.add(Visit(date: daysAgo(100)), customer: tekstil, contacts: [], opportunity: nil)
 
         // 4) Önemli, aday, hiç ziyaret edilmemiş
@@ -82,6 +107,10 @@ enum SampleData {
             ratingNote: "Fırın otomasyonunu yenilemek istiyorlar."
         )
         try repositories.customers.add(seramik)
+        try repositories.opportunities.add(
+            Opportunity(title: "Fırın kontrol sistemi", estimatedValue: 85_000, currency: .eur, stage: .lead),
+            customer: seramik
+        )
 
         // 5) Zayıf, pasif
         let plastik = Customer(
@@ -97,6 +126,10 @@ enum SampleData {
             ratingNote: "Robot hücresi için sürücü ihtiyacı çıkabilir."
         )
         try repositories.customers.add(otomotiv)
+        try repositories.opportunities.add(
+            Opportunity(title: "Robot hücresi sürücüleri", estimatedValue: 9_800, currency: .eur, stage: .qualified, expectedCloseDate: inDays(3)),
+            customer: otomotiv
+        )
         try repositories.contacts.add(Contact(fullName: "Elif Şahin", title: "Proje Mühendisi", phone: "0555 000 00 04", email: "elif@example.com"), to: otomotiv)
         try repositories.visits.add(Visit(date: daysAgo(3)), customer: otomotiv, contacts: [], opportunity: nil)
     }

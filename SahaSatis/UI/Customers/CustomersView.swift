@@ -63,6 +63,9 @@ struct CustomersView: View {
                     scrollToHistory: debugScene == .visitHistory
                 )
             }
+            .navigationDestination(for: Opportunity.self) { opportunity in
+                OpportunityDetailView(opportunity: opportunity, context: appContext)
+            }
             .sheet(item: $debugVisit, onDismiss: { model.reload() }) { target in
                 VisitFormView(context: appContext, customer: target.customer, visit: nil, seed: target.seed)
             }
@@ -187,7 +190,8 @@ struct CustomersView: View {
         model.reload()
         let showcase = model.customers.first { $0.name == "Örnek Makina A.Ş." } ?? model.customers.first
         switch scene {
-        case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview:
+        case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview,
+             .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost:
             break
         case .detail, .visitHistory:
             if let showcase { path.append(showcase) }

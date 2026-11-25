@@ -30,6 +30,7 @@ struct SettingsView: View {
                     regionSection
                     remindersSection
                     visitFrequencySection
+                    opportunitySection
                     quoteSection
                     exportSection
                     aboutSection
@@ -112,6 +113,25 @@ struct SettingsView: View {
             Text("Ziyaret sıklığı")
         } footer: {
             Text("Son ziyaretten bu kadar gün geçen müşteriler için ziyaret hatırlatması oluşur.")
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var opportunitySection: some View {
+        Section {
+            Picker("Varsayılan para birimi", selection: $settings.defaultCurrency) {
+                ForEach(Currency.allCases, id: \.self) { currency in
+                    Text(currency.displayName).tag(currency)
+                }
+            }
+            Toggle("Kapanış hatırlatması", isOn: $settings.opportunityCloseReminderEnabled)
+            if settings.opportunityCloseReminderEnabled {
+                Stepper("Kapanıştan \(settings.opportunityCloseReminderDays) gün önce", value: $settings.opportunityCloseReminderDays, in: 1...60)
+            }
+        } header: {
+            Text("Fırsatlar")
+        } footer: {
+            Text("Beklenen kapanış tarihi olan açık fırsatlar için hatırlatma oluşur. Yeni fırsatlar varsayılan para birimiyle açılır.")
         }
         .listRowBackground(Theme.surface)
     }

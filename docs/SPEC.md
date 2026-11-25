@@ -89,7 +89,7 @@ Sekiz SwiftData modeli var; merkezde `Customer` durur, diğerleri ona bağlanır
 | `Opportunity` (Fırsat) | title, description, estimatedValue, currency, stage (`lead` / `qualified` / `quoted` / `negotiation` / `won` / `lost`), expectedCloseDate, lostReason | customer, quotes, visits |
 | `Quote` (Teklif) | quoteNumber, date, validUntil, currency, totalAmount (kalemlerden hesaplanır), status (`draft` / `sent` / `followUp` / `won` / `lost`), followUpDays (bu teklife özel; boşsa ayarlardaki varsayılan), notes | customer, opportunity?, items, tasks |
 | `QuoteItem` (Teklif kalemi) | catalogNumber, description, quantity, unitPrice, discountPercent, lineTotal (hesaplanan) | quote |
-| `FollowUpTask` (Takip / görev) | title, dueDate, isDone, doneAt, source (`manual` / `visitNextStep` / `quoteFollowUp` / `quoteExpiry` / `visitFrequency`), notificationID | customer?, quote?, visit? |
+| `FollowUpTask` (Takip / görev) | title, dueDate, isDone, doneAt, source (`manual` / `visitNextStep` / `quoteFollowUp` / `quoteExpiry` / `visitFrequency` / `opportunityClose`), notificationID | customer?, quote?, visit?, opportunity? |
 
 Ayarlar (`AppSettings`) UserDefaults'ta App Group altında tutulur; ayrıntı "Hatırlatma motoru" bölümünde.
 
@@ -143,6 +143,9 @@ Takip tarihi: 28.11.2026
 **5. Fırsat / Teklif**
 
 - Pipeline görünümü: aşamalara göre gruplu liste, aşama başına toplam tutar (para birimine göre ayrı)
+- Aşamalar: Yeni, Nitelikli, Teklif verildi, Pazarlık, Kazanıldı, Kaybedildi. Grup başlığında adet ve toplam; Kazanıldı / Kaybedildi grupları varsayılan kapalı
+- Fırsat formu: müşteri, başlık, açıklama, tahmini tutar, para birimi (varsayılan ayarlardan), aşama, beklenen kapanış tarihi; Kaybedildi seçilince kayıp sebebi sorulur
+- Fırsat detayı: bilgiler, aşama değiştirme, bağlı ziyaretler ve teklifler; kapanış tarihi yaklaşınca hatırlatma, Kazanıldı/Kaybedildi olunca iptal
 - Teklif formu: no, tarih, geçerlilik, para birimi, kalemler (katalog no, açıklama, adet, birim fiyat, iskonto), toplam otomatik
 - Teklif detayında "Takip ayarları": bu teklife özel takip günleri (varsayılan ayarlardan gelir)
 - Durum değişince (kazanıldı/kaybedildi) bekleyen takipler iptal edilir; kaybedildi için sebep sorulur

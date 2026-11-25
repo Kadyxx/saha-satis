@@ -27,6 +27,7 @@ struct RootTabView: View {
         case .settings, .settingsReminders, .settingsCities: return .settings
         case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory: return .customers
         case .today, .todayForm, .export, .exportPreview: return .today
+        case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost: return .pipeline
         }
     }
 
@@ -40,11 +41,7 @@ struct RootTabView: View {
                 .tabItem { Label("Müşteriler", systemImage: "building.2") }
                 .tag(AppTab.customers)
 
-            PlaceholderView(
-                title: "Fırsat/Teklif",
-                systemImage: "doc.text",
-                message: "Fırsat hattı ve teklifleriniz burada olacak."
-            )
+            PipelineView(repositories: repositories, debugScene: debugScene)
             .tabItem { Label("Fırsat/Teklif", systemImage: "doc.text") }
             .tag(AppTab.pipeline)
 

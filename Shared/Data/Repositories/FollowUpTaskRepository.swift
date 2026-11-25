@@ -14,16 +14,22 @@ protocol FollowUpTaskRepository {
     func openTasks(on day: Date, calendar: Calendar) throws -> [FollowUpTask]
     /// Bildirim motoru için: vadesi en yakın `limit` tamamlanmamış görev (iOS en fazla 64 bildirim planlar).
     func nextOpenTasks(limit: Int) throws -> [FollowUpTask]
-    func add(_ task: FollowUpTask, customer: Customer?, quote: Quote?, visit: Visit?) throws
+    func add(_ task: FollowUpTask, customer: Customer?, quote: Quote?, visit: Visit?, opportunity: Opportunity?) throws
     func update(_ task: FollowUpTask) throws
     func delete(_ task: FollowUpTask) throws
     func complete(_ task: FollowUpTask, at date: Date) throws
     func postpone(_ task: FollowUpTask, to newDueDate: Date) throws
     /// Bir teklifin bekleyen (tamamlanmamış) takiplerini siler; teklif kazanıldı/kaybedildi olunca kullanılır.
     func cancelOpenTasks(for quote: Quote) throws
+    /// Bir fırsatın bekleyen (tamamlanmamış) görevlerini siler; fırsat kazanılınca/kaybedilince kullanılır.
+    func cancelOpenTasks(for opportunity: Opportunity) throws
 }
 
 extension FollowUpTaskRepository {
+    func add(_ task: FollowUpTask, customer: Customer?, quote: Quote?, visit: Visit?) throws {
+        try add(task, customer: customer, quote: quote, visit: visit, opportunity: nil)
+    }
+
     func overdueTasks(asOf date: Date) throws -> [FollowUpTask] {
         try overdueTasks(asOf: date, calendar: .current)
     }
@@ -72,12 +78,13 @@ final class SwiftDataFollowUpTaskRepository: FollowUpTaskRepository {
         Array(try openTasks().prefix(max(0, limit)))
     }
 
-    func add(_ task: FollowUpTask, customer: Customer?, quote: Quote?, visit: Visit?) throws {
+    func add(_ task: FollowUpTask, customer: Customer?, quote: Quote?, visit: Visit?, opportunity: Opportunity?) throws {
         if task.ownerUserID.isEmpty { task.ownerUserID = ownerUserID }
         context.insert(task)
         task.customer = customer
         task.quote = quote
         task.visit = visit
+        task.opportunity = opportunity
         try context.saveAndNotify()
     }
 
@@ -106,6 +113,14 @@ final class SwiftDataFollowUpTaskRepository: FollowUpTaskRepository {
 
     func cancelOpenTasks(for quote: Quote) throws {
         let pending = try openTasks().filter { $0.quote?.id == quote.id }
+        for task in pending {
+            context.delete(task)
+        }
+        try context.saveAndNotify()
+    }
+
+    func cancelOpenTasks(for opportunity: Opportunity) throws {
+        let pending = try openTasks().filter { $0.opportunity?.id == opportunity.id }
         for task in pending {
             context.delete(task)
         }

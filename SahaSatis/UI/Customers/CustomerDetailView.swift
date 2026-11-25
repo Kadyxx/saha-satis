@@ -10,8 +10,7 @@ private struct VisitEditTarget: Identifiable {
     let visit: Visit
 }
 
-/// Müşteri detayı: üst kart (değerlendirme rozeti + not), Kişiler, Notlar ve henüz boş başlıklar
-/// (Ziyaret geçmişi, Fırsatlar, Kurulu baz).
+/// Müşteri detayı: üst kart (değerlendirme rozeti + not), Kişiler, Notlar, Ziyaret geçmişi, Fırsatlar ve Kurulu baz.
 struct CustomerDetailView: View {
     let customer: Customer
     let repositories: Repositories
@@ -25,6 +24,8 @@ struct CustomerDetailView: View {
     @Environment(\.openURL) private var openURL
     @State private var contacts: [Contact] = []
     @State private var visits: [Visit] = []
+    @State private var opportunities: [Opportunity] = []
+    @State private var showingNewOpportunity = false
     @State private var visitTarget: VisitEditTarget?
     @State private var visitToDelete: Visit?
     @State private var showingEdit = false
@@ -39,7 +40,7 @@ struct CustomerDetailView: View {
                 contactsSection
                 notesSection
                 visitsSection
-                emptySection(title: "Fırsatlar", message: "Bu müşterinin fırsatları burada listelenecek.")
+                opportunitiesSection
                 installedBaseSection
             }
             .task {
@@ -66,6 +67,11 @@ struct CustomerDetailView: View {
         .onAppear {
             reloadContacts()
             reloadVisits()
+            reloadOpportunities()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .appDataDidChange)) { _ in reloadOpportunities() }
+        .sheet(isPresented: $showingNewOpportunity, onDismiss: reloadOpportunities) {
+            OpportunityFormView(context: appContext, opportunity: nil, customer: customer, onSaved: reloadOpportunities)
         }
         .sheet(isPresented: $showingEdit) {
             CustomerFormView(
@@ -216,6 +222,29 @@ struct CustomerDetailView: View {
         .listRowBackground(Theme.surface)
     }
 
+    /// Müşterinin fırsatları (aşamaya göre, açıklar önce); satıra dokununca fırsat detayı açılır.
+    private var opportunitiesSection: some View {
+        Section("Fırsatlar") {
+            if opportunities.isEmpty {
+                Text("Bu müşteri için fırsat yok.")
+                    .font(.callout)
+                    .foregroundStyle(Theme.textSecondary)
+            } else {
+                ForEach(opportunities) { opportunity in
+                    NavigationLink(value: opportunity) {
+                        OpportunityRow(opportunity: opportunity, showCustomer: false, showStage: true)
+                    }
+                }
+            }
+            Button { showingNewOpportunity = true } label: {
+                Label("Fırsat ekle", systemImage: "plus")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
+        }
+        .listRowBackground(Theme.surface)
+    }
+
     private func emptySection(title: String, message: String) -> some View {
         Section(title) {
             Text(message)
@@ -250,6 +279,11 @@ struct CustomerDetailView: View {
     }
 
     // MARK: - İşlemler
+
+    private func reloadOpportunities() {
+        let all = (try? repositories.opportunities.opportunities(for: customer)) ?? []
+        opportunities = PipelineGrouping.groups(from: all).flatMap(\.opportunities)
+    }
 
     private func reloadContacts() {
         do {

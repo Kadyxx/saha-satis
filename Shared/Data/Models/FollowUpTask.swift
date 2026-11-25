@@ -20,6 +20,7 @@ final class FollowUpTask {
     var customer: Customer?
     var quote: Quote?
     var visit: Visit?
+    var opportunity: Opportunity?
 
     init(
         title: String,

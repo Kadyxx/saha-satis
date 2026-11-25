@@ -18,6 +18,10 @@ enum DebugScene: String {
     case todayForm
     case export
     case exportPreview
+    case opportunities
+    case opportunityDetail
+    case opportunityForm
+    case opportunityLost
 }
 
 enum DebugLaunch {

@@ -18,7 +18,7 @@ struct SahaSatisApp: App {
             #if DEBUG
             if useSampleData {
                 try SampleData.load(into: repositories)
-                if DebugLaunch.scene == .today || DebugLaunch.scene == .todayForm {
+                if let scene = DebugLaunch.scene, [.today, .todayForm, .export, .exportPreview].contains(scene) {
                     try SampleData.loadTodayShowcase(into: repositories)
                 }
             }

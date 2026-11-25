@@ -187,7 +187,7 @@ struct CustomersView: View {
         model.reload()
         let showcase = model.customers.first { $0.name == "Örnek Makina A.Ş." } ?? model.customers.first
         switch scene {
-        case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm:
+        case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview:
             break
         case .detail, .visitHistory:
             if let showcase { path.append(showcase) }

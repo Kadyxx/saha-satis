@@ -16,6 +16,8 @@ enum DebugScene: String {
     case visitHistory
     case today
     case todayForm
+    case export
+    case exportPreview
 }
 
 enum DebugLaunch {

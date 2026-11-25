@@ -296,6 +296,46 @@ SPEC palet tablosuna eklendi; yalnızca `TodayView`'daki kaydırma düğmelerind
     widget, teklif tutarlarının tek para birimine çevrilmesi (para birimi başına ayrı gösterilir), tamamlanan görevin
     widget'ta animasyonla kaybolması (sistem zaman çizelgesini yeniler).
 
+## Gün sonu dışa aktarma — kararlar
+
+1. **Akış.** Bugün ekranındaki "Ziyaretleri CRM için gönder" düğmesi (bugünkü ziyaretler bölümünde, ziyaret olmasa da
+   görünür; başka bir günü seçip gönderebilmek için) bir sheet açar: **seçim → önizleme → gönderim**
+   (`VisitExportFlowView`). Seçimde gün seçici (varsayılan bugün, gelecek seçilemez), "Aktarılmış ziyaretleri de göster"
+   anahtarı ve onay daireli ziyaret listesi var; **aktarılmamışlar baştan seçili**, aktarılmışlar ("Aktarıldı" etiketli)
+   listelenirse seçili gelmez, tek tek işaretlenip yeniden gönderilebilir. Gün değişince seçim o günün aktarılmamışlarına
+   sıfırlanır; anahtar açılıp kapanınca seçim korunur (listeden çıkan seçimden düşer).
+2. **Metin (`VisitReportFormatter`, saf mantık).** SPEC şablonu birebir: `=== ZIYARET n ===` (SPEC'te "İ" yok, aynen
+   bırakıldı), Tarih, Firma, Şehir / İlçe, Görüşülen, Ziyaret tipi, Konu, Görüşme notu, Sonraki adım, Takip tarihi.
+   - Tarih **gg.aa.yyyy**, takvimin saat dilimiyle (cihaz yerelinden bağımsız). Konu "Ziyaret Raporu – 24.11.2026"
+     (tire: en dash U+2013).
+   - **Boş alanın satırı atlanmaz, değeri "-" olur** (CRM'e alan alan yapıştırırken sıra şaşmasın). Boş not da
+     "Görüşme notu:" altında "-".
+   - Tek satırlık alanlarda satır sonları/art arda boşluklar tek boşluğa iner; **yalnızca görüşme notu çok satırlıdır**
+     (satır sonları korunur, satır sonu boşlukları, baştaki/sondaki boş satırlar ve CRLF temizlenir).
+   - Görüşülen: "Ad Soyad (Unvan), Ad Soyad"; adı boş kişi atlanır; sıra: birincil kişi önce, sonra ada göre.
+   - Şehir / İlçe: ikisi doluysa "Bursa / Nilüfer", biri doluysa yalnızca o.
+   - **Konu**: ziyaretin `topics` alanı (Faz 4'te yapay zekâ doldurur), boşsa bağlı fırsatın başlığı, o da yoksa "-".
+     Ziyaret formunda "konu" girişi yok; şimdilik çoğu ziyarette "-" çıkar.
+   - Görüşme notu `Visit.summary`'den gelir; ham ses metni (`transcript`) rapora girmez.
+   - Bloklar seçili ziyaretlerin **eskiden yeniye** sırasıyla numaralanır ve aralarında bir boş satır bulunur.
+3. **Önizleme.** Alıcı ve konu kartı (CRM adresi boşsa uyarı), her ziyaret için ayrı kart + "Kopyala" (1,5 sn
+   "Kopyalandı"), altta "Gönder", "Tümünü kopyala", "Aktarıldı olarak işaretle" (onay sorar).
+4. **Gönderim.** `MFMailComposeViewController` (alıcı Ayarlar'daki CRM e-postası, konu ve metin hazır). Mail hesabı yoksa
+   (`canSendMail() == false`, simülatörde de böyle) **sistem paylaşım menüsü** açılır; konu `UIActivityItemSource` ile
+   iletilir (Mail seçilirse konu dolu gelir).
+5. **"Aktarıldı" ne zaman olur.** Yalnızca mail sonucu **`.sent`** ise (veya giden kutusuna alındıysa; taslak kaydetme ve
+   iptal sayılmaz) ya da kullanıcı **"Aktarıldı olarak işaretle"** derse. **Paylaşım menüsü ve "Kopyala" otomatik
+   işaretlemez** (kopyalamanın CRM'e yapıştırıldığını bilemeyiz; kullanıcı işaretler). Seçili ziyaretler
+   `exportedToCRM = true`, `exportedAt = şimdi` olur; zaten aktarılmış olanlar yeniden gönderilince `exportedAt` yeni
+   zamanla güncellenir. Kayıt `appDataDidChange` yayınladığı için Bugün ekranındaki "CRM'e aktarılmadı" sayısı, gün sonu
+   hatırlatması (aktarılmamış kalmadıysa kalkar) ve widget'taki sayı kendiliğinden güncellenir (testle doğrulandı).
+6. **Yapılmayanlar:** SPEC "Şablon ayarlardan değiştirilebilir" diyor; şablon düzenleme ayarı yapılmadı, yalnızca varsayılan
+   şablon var (CRM zaten belirli bir biçime bağlı değil). Ziyaret formuna "Konu" alanı eklenmedi. Mail ekine dosya yok.
+7. **Ekran görüntüleri (DEBUG):** `export` (seçim) ve `exportPreview` (önizleme), açık/koyu; örnek veride bugün 3 ziyaret
+   (1'i aktarılmış, 2'si seçili) ve 2 kişili/çok satırlı notlu bir ziyaret var. Gönderim adımı (mail/paylaşım) görüntüde yok.
+   **Elle denenmesi gerekenler (gerçek iPhone):** mail yazma ekranının dolu gelmesi, `.sent` sonrası işaretleme, mail
+   hesabı yokken paylaşım menüsü, panoya kopyalanan metnin Windows'ta CRM'e yapıştırılması (satır sonları, Türkçe karakter).
+
 ## Durum günlüğü (devam)
 
 - Düzeltmeler + Ayarlar ekranı: CI ilk denemede yeşil (60 test), görüntüler elle incelendi.

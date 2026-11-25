@@ -22,6 +22,16 @@ enum AppFormat {
         return formatter.string(from: date)
     }
 
+    /// "24.11.2026" (CRM dışa aktarma: sabit sayısal biçim, gün/ay iki haneli)
+    static func numericDate(_ date: Date, calendar: Calendar = .current) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.calendar = calendar
+        formatter.timeZone = calendar.timeZone
+        formatter.dateFormat = "dd.MM.yyyy"
+        return formatter.string(from: date)
+    }
+
     /// "27 Kas Cum"
     static func shortDay(_ date: Date, timeZone: TimeZone = .current) -> String {
         let formatter = DateFormatter()

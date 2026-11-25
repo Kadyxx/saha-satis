@@ -313,7 +313,7 @@ struct RegionFilterBar: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(height: 48)
     }
 
     private func chipLabel(_ title: String, isOn: Bool, showsChevron: Bool) -> some View {

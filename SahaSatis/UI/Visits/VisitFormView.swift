@@ -261,24 +261,26 @@ struct VoiceNoteSection: View {
     @ViewBuilder
     private var micControl: some View {
         VStack(spacing: 10) {
-            HStack(spacing: 20) {
-                if controller.state == .recording {
-                    Button { controller.pause() } label: {
-                        Label("Duraklat", systemImage: "pause.fill")
+            micButton
+            Text(micCaption)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(controller.isRecording ? Theme.overdue : Theme.textPrimary)
+            if controller.state == .recording || controller.state == .paused {
+                HStack(spacing: 12) {
+                    if controller.state == .recording {
+                        Button { controller.pause() } label: {
+                            Label("Duraklat", systemImage: "pause.fill")
+                                .fixedSize()
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
-                }
-                micButton
-                if controller.state == .recording || controller.state == .paused {
                     Button { controller.stop() } label: {
                         Label("Bitir", systemImage: "stop.fill")
+                            .fixedSize()
                     }
                     .buttonStyle(.bordered)
                 }
             }
-            Text(micCaption)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(controller.isRecording ? Theme.overdue : Theme.textPrimary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)

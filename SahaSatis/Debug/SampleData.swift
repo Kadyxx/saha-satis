@@ -132,22 +132,36 @@ enum SampleData {
         try task("Numune ürün listesini gönder", at(1, 9), .manual, marmara)
         try task("Kuzey Tekstil'i ara", at(1, 11), .manual, kuzey)
 
-        // Bugünkü ziyaretler: biri CRM'e aktarılmış, ikisi aktarılmamış
+        // Bugünkü ziyaretler: biri CRM'e aktarılmış, ikisi aktarılmamış (dışa aktarma ekranları da bunları kullanır)
         if let c = customer(deniz) {
-            let exported = Visit(date: at(0, 8, 30), type: .visit, summary: "Robot hücresi sürücü ihtiyacı görüşüldü.")
-            try repositories.visits.add(exported, customer: c, contacts: [], opportunity: nil)
+            let exported = Visit(
+                date: at(0, 8, 30), type: .visit,
+                summary: "Robot hücresi sürücü ihtiyacı görüşüldü."
+            )
+            try repositories.visits.add(exported, customer: c, contacts: c.contacts ?? [], opportunity: nil)
             try repositories.visits.markExported([exported], at: now)
         }
         if let c = customer(ornek) {
             try repositories.visits.add(
-                Visit(date: at(0, 11, 15), type: .phone, summary: "Teklif kapsamı telefonda netleştirildi."),
-                customer: c, contacts: [], opportunity: nil
+                Visit(
+                    date: at(0, 11, 15), type: .phone,
+                    summary: "Teklif kapsamı telefonda netleştirildi.\nHat 3 için 2 adet ControlLogix işlemci ve G/Ç modülleri istendi.\nTeslim süresi ve bakım sözleşmesi ayrıca konuşulacak.",
+                    topics: ["Hat 3 PLC yenileme"],
+                    nextStep: "Hat 3 için teklif hazırlanacak",
+                    nextStepDate: at(3, 9)
+                ),
+                customer: c, contacts: c.contacts ?? [], opportunity: nil
             )
         }
         if let c = customer(marmara) {
             try repositories.visits.add(
-                Visit(date: at(0, 13, 45), type: .visit, summary: "Dolum hattı yatırımı için yerinde keşif."),
-                customer: c, contacts: [], opportunity: nil
+                Visit(
+                    date: at(0, 13, 45), type: .visit,
+                    summary: "Dolum hattı yatırımı için yerinde keşif yapıldı.",
+                    nextStep: "Numune ürün listesi gönderilecek",
+                    nextStepDate: at(1, 9)
+                ),
+                customer: c, contacts: c.contacts ?? [], opportunity: nil
             )
         }
     }

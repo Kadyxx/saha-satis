@@ -14,6 +14,7 @@ struct TodayView: View {
     @State private var newTask: ManualTaskSeed?
     @State private var postponeTarget: FollowUpTask?
     @State private var customDateTarget: FollowUpTask?
+    @State private var showExport = false
     @State private var didRunDebugScene = false
 
     init(repositories: Repositories, reminders: ReminderScheduler, debugScene: DebugScene? = nil) {
@@ -39,6 +40,9 @@ struct TodayView: View {
                 }
                 .sheet(item: $newTask, onDismiss: { model.reload() }) { seed in
                     ManualTaskFormView(context: appContext, seed: seed, onSaved: { model.reload() })
+                }
+                .sheet(isPresented: $showExport, onDismiss: { model.reload() }) {
+                    VisitExportFlowView(context: appContext, startAtPreview: debugScene == .exportPreview)
                 }
                 .sheet(item: $customDateTarget) { task in
                     PostponeDateSheet(task: task) { date in
@@ -159,6 +163,11 @@ struct TodayView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(Theme.brandText)
             }
+            Button { showExport = true } label: {
+                Label("Ziyaretleri CRM için gönder", systemImage: "paperplane")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
         } header: {
             Text("Bugünkü ziyaretler")
         }
@@ -199,7 +208,13 @@ struct TodayView: View {
     // MARK: - Ekran görüntüsü senaryoları (yalnızca DEBUG başlatma argümanıyla)
 
     private func runDebugSceneIfNeeded() async {
-        guard debugScene == .todayForm, !didRunDebugScene else { return }
+        guard !didRunDebugScene else { return }
+        if debugScene == .export || debugScene == .exportPreview {
+            didRunDebugScene = true
+            showExport = true
+            return
+        }
+        guard debugScene == .todayForm else { return }
         didRunDebugScene = true
         let customer = try? repositories.customers.fetchAll().first { $0.name == "Örnek Makina A.Ş." }
         newTask = ManualTaskSeed(title: "Bakım sözleşmesi örneğini Ahmet Bey'e gönder", customer: customer)

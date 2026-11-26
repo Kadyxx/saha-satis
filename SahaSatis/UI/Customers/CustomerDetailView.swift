@@ -47,20 +47,17 @@ struct CustomerDetailView: View {
         let _ = installedBaseTick
         ScrollViewReader { proxy in
             List {
+                // Yalnızca ekran görüntüsü senaryosu: kurulu baz bölümü en üstte (liste tembel yüklendiğinden kaydırma güvenilmez).
+                if scrollToInstalledBase { installedBaseSection }
                 headerSection
                 contactsSection
                 notesSection
                 visitsSection
                 opportunitiesSection
                 quotesSection
-                installedBaseSection
+                if !scrollToInstalledBase { installedBaseSection }
             }
             .task {
-                if scrollToInstalledBase {
-                    try? await Task.sleep(for: .milliseconds(600))
-                    proxy.scrollTo(installedBaseAnchor, anchor: .top)
-                    return
-                }
                 if openMigrationProductForm, !didRunDebugScene {
                     didRunDebugScene = true
                     try? await Task.sleep(for: .milliseconds(600))

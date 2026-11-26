@@ -617,3 +617,9 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
 - **Bilinen sınır:** form açıkken Claude uygulamasına geçilir; iOS uygulamayı arka planda kapatırsa kaydedilmemiş form kaybolur (ham metin panodaki gönderilen metinde kalır, cevap kopyalanınca onun yerini alır).
 - **Ekran görüntüleri:** `screen-claudeButtons-*`, `screen-claudePreview-*`, `screen-claudeBroken-*`, `screen-settingsClaude-*`.
 - **Elle denenmesi gerekenler (gerçek iPhone):** paylaşım menüsünde Claude uygulamasının çıkması ve metnin gelmesi, cevabı kopyalayıp yapıştırma (izin penceresi), Claude'un şablona uyması.
+
+## Durum günlüğü – Faz 4
+
+- 4a: CI ilk denemede yeşil (416 test). PR #12. İlk koşuda döngünün ilk senaryosunun görüntüsü erken alındı; yeni senaryolar döngünün sonuna taşındı.
+- 4b: derleme ve testler ilk denemede yeşil (437 test). Yalnızca `claudePreview` görüntüsü önizleme açılmadan alınmıştı: 2. denemede Claude senaryolarının beklemesi 12 sn yapıldı, ama iş 30 dk sınırını aşıp iptal oldu (yavaş runner; önceki yeşil koşu da 27,5 dk). 3. denemede sınır 45 dk yapıldı: yeşil ve görüntüler doğru. **Dikkat:** ekran görüntüsü döngüsü işin yarıdan fazlasını alıyor; senaryo sayısı artarsa döngüyü ayrı işe bölmek gerekebilir.
+- Gerçek iPhone denemesi yapılmadan SPEC'e göre Faz 4 kapanmış sayılmaz. "Müşteri değerlendirme önerisi" (SPEC → Yapay zekâ) bu turun kapsamında değildi, yapılmadı.

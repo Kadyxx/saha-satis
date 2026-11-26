@@ -69,7 +69,9 @@ struct CustomersView: View {
                     repositories: repositories,
                     settings: settings,
                     onDelete: delete,
-                    scrollToHistory: debugScene == .visitHistory
+                    scrollToHistory: debugScene == .visitHistory,
+                    scrollToInstalledBase: debugScene == .installedBase,
+                    openMigrationProductForm: debugScene == .installedBaseForm
                 )
             }
             .navigationDestination(for: Opportunity.self) { opportunity in
@@ -191,6 +193,7 @@ struct CustomersView: View {
                     Text(rating.title).tag(CustomerRating?.some(rating))
                 }
             }
+            Toggle("Migrasyon fırsatı olanlar", isOn: $model.filter.migration)
             Picker("Sıralama", selection: $model.filter.sort) {
                 Text("Ada göre").tag(CustomerSort.name)
                 Text("Son ziyaret (yeni → eski)").tag(CustomerSort.lastVisitNewestFirst)
@@ -246,7 +249,7 @@ struct CustomersView: View {
              .quotes, .quoteDetail, .quoteForm,
              .region, .regionCity, .regionDistrict, .weekDay:
             break
-        case .detail, .visitHistory:
+        case .detail, .visitHistory, .installedBase, .installedBaseForm:
             if let showcase { path.append(showcase) }
         case .form:
             if let showcase { editTarget = CustomerEditTarget(customer: showcase) }

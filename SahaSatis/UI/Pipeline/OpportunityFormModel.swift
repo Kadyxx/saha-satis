@@ -31,6 +31,8 @@ final class OpportunityFormModel {
         defaultCurrency: Currency,
         opportunity: Opportunity? = nil,
         customer: Customer? = nil,
+        prefillTitle: String = "",
+        prefillDetails: String = "",
         calendar: Calendar = .current,
         now: Date = Date()
     ) {
@@ -42,6 +44,11 @@ final class OpportunityFormModel {
         self.currency = opportunity?.currency ?? defaultCurrency
         // Tarih anahtarı açılınca önerilen gün: iki hafta sonrası.
         self.closeDate = calendar.date(byAdding: .day, value: 14, to: now) ?? now
+
+        if opportunity == nil {
+            title = prefillTitle
+            details = prefillDetails
+        }
 
         if let opportunity {
             title = opportunity.title

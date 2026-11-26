@@ -581,3 +581,13 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
   - Ziyaret sıklığı: Bölge filtresiyle aynı kural (eşik gün dahil, pasif hariç).
 - **Plana ekle:** "Ziyaret: <firma>" adlı, o güne, ayardaki hatırlatma saatinde, kaynağı "manuel" bir FollowUpTask. Aynı gün aynı müşteri için açık görev varsa tekrar eklemez; satırda "Planlandı" görünür. Bildirimi mevcut görev bildirimi üretir.
 - **Sabah özeti:** günün şehri planlıysa ilk satır "Bugün Bursa, Yalova: 3 planlı ziyaret" (ya da "planlı ziyaret yok"), altına her zamanki takip özeti. Planlı ziyaret sayısı o gün vadeli "Ziyaret: " görevleridir. Şehri planlı ama işi olmayan gün için de özet gönderilir. Plan yoksa metin eskisi gibi.
+
+## Faz 3d – Kurulu baz (kararlar)
+
+- **Model zaten vardı** (InstalledProduct, `hasMigrationOpportunity`, Bölge'deki migrasyon filtresi); bu fazda ekran, ayar ve akışlar eklendi.
+- **Yaşam döngüsü adları:** Aktif / Aktif (olgun) / **Üretim sonu** (eskiden "Ömrünü tamamlıyor") / Üretimden kalktı. Ham değerler (`endOfLife` vb.) değişmedi, veri göçü gerekmedi.
+- **Müşteri detayı → Kurulu baz:** satıra dokun = düzenle, sola kaydır = sil (onaylı), "Ürün ekle", satırda "Fırsat aç". Katalog no zorunlu, adet ≥ 1.
+- **Ürün aileleri (Ayarlar → Kurulu baz):** ad + varsayılan yaşam döngüsü + not; düzenlenebilir/silinebilir/eklenebilir, App Group UserDefaults'ta JSON. Örnekler: PLC-5 (Üretimden kalktı), SLC 500 (Üretim sonu), ikisinde de "Rockwell yaşam döngüsü sayfasından doğrulayın" notu. **Bu iki durumu kendi bilgimle seçtim; yayından önce Rockwell sayfasıyla doğrulayın.** Liste hiç kaydedilmemişse örnekler gelir; boş liste bilinçli seçim sayılır.
+- **Aile seçimi:** formda listeden seçilince yaşam döngüsü ailenin varsayılanına çekilir, sonra elle değiştirilebilir. "Diğer…" ile serbest aile adı yazılır; serbest ad yaşam döngüsünü değiştirmez. Mevcut ürünü açmak yaşam döngüsünü ezmez.
+- **Migrasyon etiketi:** Üretim sonu / Üretimden kalktı ürünü olan müşteride detayda ve müşteri satırında "Migrasyon fırsatı". Müşteriler filtre menüsüne "Migrasyon fırsatı olanlar" anahtarı eklendi (diğer filtrelerle VE).
+- **Fırsat aç:** fırsat formu müşteri seçili, başlık "<aile> migrasyonu" (aile yoksa katalog no), açıklama "Ürün: <katalog> (<aile>) / Adet / Yaşam döngüsü / Not" satırları. Tutar boş (0), kullanıcı doldurur; kaydet'e basılana dek hiçbir şey oluşmaz.

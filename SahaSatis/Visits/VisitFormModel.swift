@@ -11,6 +11,10 @@ struct VisitFormSeed {
     /// Müşterinin ilk N kişisi işaretli gelir.
     var selectFirstContacts = 0
     var autoStartRecording = false
+    /// "Claude ile düzenle" düğmelerine kaydırır.
+    var scrollToAssistant = false
+    /// Doluysa açılışta bu cevap yapıştırılmış gibi önizleme gösterilir.
+    var pastedReply: String?
 }
 
 /// Ziyaret formundaki "Fırsat" seçimi.
@@ -46,8 +50,10 @@ final class VisitFormModel {
     var newOpportunityTitle = ""
 
     let voice: VoiceNoteController
-    /// Ham ses metni: sesli not parçalarının birleşimi (kullanıcı notu düzenlese de değişmez).
+    /// Ham metin: sesli not parçalarının birleşimi (kullanıcı notu düzenlese de değişmez); Claude cevabı
+    /// uygulanırken o anki ham not da buraya eklenir.
     private(set) var rawTranscript = ""
+    private var lastAppliedSummary: String?
 
     private let repositories: Repositories
     private let reminderMinutes: Int
@@ -177,6 +183,50 @@ final class VisitFormModel {
     func appendDictation(_ segment: String) {
         note = note.isEmpty ? segment : note + " " + segment
         rawTranscript = rawTranscript.isEmpty ? segment : rawTranscript + " " + segment
+    }
+
+    // MARK: - Claude ile düzenleme
+
+    var canAskAssistant: Bool {
+        customer != nil && !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    func assistantInput(instruction: String, today: Date = Date()) -> NoteAssistantInput {
+        NoteAssistantInput(
+            rawNote: note,
+            customerName: customer?.name ?? "",
+            contacts: contacts.filter { selectedContactIDs.contains($0.id) }.map { contact in
+                contact.title.isEmpty ? contact.fullName : "\(contact.fullName) (\(contact.title))"
+            },
+            today: today,
+            instruction: instruction
+        )
+    }
+
+    /// Onaylanan öneriyi forma yazar. Değiştirilmeden önce ham not `transcript`'te saklanır.
+    /// Boş gelen alanlar formdaki haliyle kalır; şablona uymayan cevapta yalnızca not değişir.
+    func apply(_ suggestion: NoteSuggestion) {
+        voice.stop()
+        preserveRawNote()
+        if !suggestion.summary.isEmpty {
+            note = suggestion.summary
+            lastAppliedSummary = suggestion.summary
+        }
+        guard suggestion.followsTemplate else { return }
+        if !suggestion.topic.isEmpty { topic = suggestion.topic }
+        if !suggestion.nextStep.isEmpty { nextStep = suggestion.nextStep }
+        if let day = suggestion.followUpDate {
+            hasNextStepDate = true
+            nextStepDate = day
+        }
+    }
+
+    /// Notta, ham metinde henüz bulunmayan bir şey varsa (elle yazılan veya düzeltilen not) ham metne eklenir.
+    /// Önceki öneri değiştirilmeden duruyorsa ham not sayılmaz.
+    private func preserveRawNote() {
+        let current = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !current.isEmpty, current != lastAppliedSummary, !rawTranscript.contains(current) else { return }
+        rawTranscript = rawTranscript.isEmpty ? current : rawTranscript + "\n\n" + current
     }
 
     // MARK: - Kaydetme

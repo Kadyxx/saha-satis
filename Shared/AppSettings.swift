@@ -62,6 +62,22 @@ final class AppSettings: ObservableObject {
     static let defaultQuoteFollowUpDays = [3, 7]
     static let defaultQuoteExpiryWarningDays = 3
     static let defaultOpportunityCloseReminderDays = 7
+    /// "Claude ile düzenle" talimatı (ham not ve bağlam bunun altına eklenir).
+    static let defaultClaudeInstruction = """
+    Aşağıdaki ham saha ziyareti notunu CRM'e girilecek hale getir. Cevabın yalnızca şu şablondan oluşsun; başka açıklama, selamlama veya biçimlendirme (kalın yazı, madde işareti, kod bloğu) ekleme:
+
+    Konu: ...
+    Özet: ...
+    Sonraki adım: ...
+    Takip tarihi: GG.AA.YYYY (yoksa boş)
+
+    Kurallar:
+    - Konu tek satırlık kısa bir başlık olsun.
+    - Özet, CRM'e girilecek resmi ve kısa bir Türkçe paragraf olsun; ürün katalog numaraları korunsun (ör. 1756-L71).
+    - Notta olmayan bilgi ekleme.
+    - Sonraki adım yoksa boş bırak.
+    - Takip tarihini GG.AA.YYYY biçiminde yaz; "haftaya salı" gibi ifadeleri bugünün tarihine göre hesapla; tarih yoksa boş bırak.
+    """
 
     private enum Key {
         static let fullName = "profile.fullName"
@@ -85,6 +101,7 @@ final class AppSettings: ObservableObject {
         static let crmEmail = "export.crmEmail"
         static let cityPlan = "weekPlan.cities"
         static let productFamilies = "installedBase.productFamilies"
+        static let claudeInstruction = "assistant.claudeInstruction"
     }
 
     private let defaults: UserDefaults
@@ -149,6 +166,19 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(try? JSONEncoder().encode(productFamilies), forKey: Key.productFamilies) }
     }
 
+    // MARK: Yardımcı
+
+    /// Claude'a gönderilen talimat. Varsayılana eşitse saklanmaz (ileride varsayılan iyileşirse kullanıcıya da gelsin).
+    @Published var claudeInstruction: String {
+        didSet {
+            if claudeInstruction == Self.defaultClaudeInstruction {
+                defaults.removeObject(forKey: Key.claudeInstruction)
+            } else {
+                defaults.set(claudeInstruction, forKey: Key.claudeInstruction)
+            }
+        }
+    }
+
     // MARK: Başlatma
 
     init(defaults: UserDefaults = AppSettings.sharedDefaults) {
@@ -184,6 +214,7 @@ final class AppSettings: ObservableObject {
         opportunityCloseReminderDays = number(Key.oppCloseDays, Self.defaultOpportunityCloseReminderDays)
         defaultCurrency = defaults.string(forKey: Key.currency).flatMap(Currency.init(rawValue:)) ?? .tl
         crmEmail = defaults.string(forKey: Key.crmEmail) ?? ""
+        claudeInstruction = defaults.string(forKey: Key.claudeInstruction) ?? Self.defaultClaudeInstruction
         cityPlan = (defaults.dictionary(forKey: Key.cityPlan) as? [String: [String]]) ?? [:]
         productFamilies = defaults.data(forKey: Key.productFamilies)
             .flatMap { try? JSONDecoder().decode([ProductFamily].self, from: $0) } ?? ProductFamily.defaults

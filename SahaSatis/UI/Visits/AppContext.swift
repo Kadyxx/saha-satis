@@ -10,6 +10,8 @@ final class AppContext: ObservableObject {
     let reminders: ReminderScheduler
     /// Bildirim temsilcisi; `UNUserNotificationCenter.delegate` zayıf tuttuğu için burada saklanır.
     let notificationResponder = NotificationResponder()
+    /// Ziyaret notu yardımcısı ("Claude ile düzenle"). İleride API uygulaması burada değiştirilir.
+    let noteAssistant: NoteAssistant = ShareToClaudeAssistant()
     /// Görev/ziyaret/teklif değişince widget'ları yeniler.
     let widgetReloader = WidgetReloader()
 

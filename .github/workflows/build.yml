@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: macos-15-intel
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -75,11 +75,12 @@ jobs:
           xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
 
           # Müşteri ekranları: yalnızca DEBUG derlemesinde, bellek içi hayali örnek veriyle.
-          for scene in installedBase installedBaseForm weekDay importMapping importPreview customers detail form settings settingsReminders settingsCities visitForm visitRecording visitHistory today todayForm export exportPreview opportunities opportunityDetail opportunityForm opportunityLost quotes quoteDetail quoteForm region regionCity regionDistrict cardResult cardResultNew; do
+          for scene in installedBase installedBaseForm weekDay importMapping importPreview customers detail form settings settingsReminders settingsCities visitForm visitRecording visitHistory today todayForm export exportPreview opportunities opportunityDetail opportunityForm opportunityLost quotes quoteDetail quoteForm region regionCity regionDistrict cardResult cardResultNew claudeButtons claudePreview claudeBroken settingsClaude; do
             for mode in light dark; do
               xcrun simctl ui "$UDID" appearance "$mode"
               xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppleLanguages "(tr)" -AppleLocale tr_TR -DebugSampleData -DebugScene "$scene"
-              sleep 5
+              # Üst üste iki sheet açan senaryolar yavaş runner'da 5 sn'ye yetişmeyebiliyor.
+              case "$scene" in claude*) sleep 12 ;; *) sleep 5 ;; esac
               xcrun simctl io "$UDID" screenshot "artifacts/screenshots/screen-$scene-$mode.png"
               xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
             done

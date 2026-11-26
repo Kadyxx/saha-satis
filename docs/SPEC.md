@@ -328,6 +328,7 @@ Sen deneyimli bir iOS geliştiricisisin. docs/SPEC.md dosyasını baştan sona o
 
 - GitHub reposu: public. Derleme dakikaları ücretsiz; koda müşteri verisi, `.p8` dosyası veya API anahtarı asla girmez (`.gitignore` ile korunur), anahtarlar yalnızca GitHub Secrets'ta durur.
 - Bulut yapay zekâ: onaylandı. Faz 4'te Claude API ile yapılır; kullanıcı kendi API anahtarını Ayarlar'a girer.
+- Faz 4 (sonradan): not düzenleme şimdilik API olmadan yapılır; metin Claude uygulamasına paylaşılır, cevap şablonla geri yapıştırılır (`NoteAssistant` protokolü; API uygulaması ileride eklenebilir).
 
 ## Kaynaklar
 

@@ -3,6 +3,7 @@ import SwiftUI
 enum SettingsRoute: Hashable {
     case cities
     case productFamilies
+    case claudeInstruction
 }
 
 /// Ayarlar sekmesi: profil, bölge, hatırlatmalar, dışa aktarma ve hakkında.
@@ -19,7 +20,13 @@ struct SettingsView: View {
     init(settings: AppSettings, debugScene: DebugScene? = nil) {
         _settings = ObservedObject(wrappedValue: settings)
         self.debugScene = debugScene
-        _path = State(initialValue: debugScene == .settingsCities ? [.cities] : [])
+        let initialPath: [SettingsRoute]
+        switch debugScene {
+        case .settingsCities: initialPath = [.cities]
+        case .settingsClaude: initialPath = [.claudeInstruction]
+        default: initialPath = []
+        }
+        _path = State(initialValue: initialPath)
         _followUpText = State(initialValue: DayListFormat.format(settings.quoteFollowUpDays))
     }
 
@@ -34,6 +41,7 @@ struct SettingsView: View {
                     visitFrequencySection
                     opportunitySection
                     quoteSection
+                    assistantSection
                     exportSection
                     importSection
                     aboutSection
@@ -54,6 +62,8 @@ struct SettingsView: View {
                     CitiesSettingsView(settings: settings)
                 case .productFamilies:
                     ProductFamiliesSettingsView(settings: settings)
+                case .claudeInstruction:
+                    ClaudeInstructionSettingsView(settings: settings)
                 }
             }
         }
@@ -175,6 +185,22 @@ struct SettingsView: View {
             Text("Teklifler")
         } footer: {
             Text("Takip günleri: teklif gönderildikten kaç gün sonra hatırlatılsın (virgülle ayırın). Her teklif için ayrıca değiştirilebilir.")
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var assistantSection: some View {
+        Section {
+            NavigationLink(value: SettingsRoute.claudeInstruction) {
+                LabeledContent(
+                    "Claude talimatı",
+                    value: settings.claudeInstruction == AppSettings.defaultClaudeInstruction ? "Varsayılan" : "Düzenlendi"
+                )
+            }
+        } header: {
+            Text("Claude ile düzenleme")
+        } footer: {
+            Text("Ziyaret formundaki \"Claude ile düzenle\" metnine eklenen talimat.")
         }
         .listRowBackground(Theme.surface)
     }

@@ -24,10 +24,10 @@ struct RootTabView: View {
     private static func initialTab(for scene: DebugScene?) -> AppTab {
         switch scene {
         case nil: return .today
-        case .settings, .settingsReminders, .settingsCities: return .settings
+        case .settings, .settingsReminders, .settingsCities, .settingsClaude: return .settings
         case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory,
              .importMapping, .importPreview, .installedBase, .installedBaseForm,
-             .cardResult, .cardResultNew: return .customers
+             .cardResult, .cardResultNew, .claudeButtons, .claudePreview, .claudeBroken: return .customers
         case .today, .todayForm, .export, .exportPreview, .weekDay: return .today
         case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm: return .pipeline

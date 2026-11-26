@@ -257,8 +257,13 @@ struct CustomersView: View {
         case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview,
              .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm,
-             .region, .regionCity, .regionDistrict, .weekDay:
+             .region, .regionCity, .regionDistrict, .weekDay, .settingsClaude:
             break
+        case .claudeButtons, .claudePreview, .claudeBroken:
+            let seed: VisitFormSeed = scene == .claudeButtons
+                ? .showcaseAssistant
+                : (scene == .claudePreview ? .showcasePreview : .showcaseBrokenPreview)
+            if let showcase { debugVisit = DebugVisitTarget(customer: showcase, seed: seed) }
         case .cardResult, .cardResultNew:
             #if DEBUG
             cardSession = CardScanSession(

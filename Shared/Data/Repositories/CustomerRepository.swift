@@ -67,7 +67,7 @@ final class SwiftDataCustomerRepository: CustomerRepository {
             result = result.filter { $0.status == status }
         }
         if filter.migration {
-            result = result.filter(.hasMigrationOpportunity)
+            result = result.filter { $0.hasMigrationOpportunity }
         }
         if let rating = filter.rating {
             result = result.filter { $0.rating == rating }

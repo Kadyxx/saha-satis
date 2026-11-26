@@ -8,6 +8,17 @@ struct VisitFormView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var model: VisitFormModel
+    @State private var shareText: ShareText?
+    @State private var preview: SuggestionPreview?
+    @State private var assistantMessage: String?
+    @State private var promptCopied = false
+
+    private struct ShareText: Identifiable {
+        let id = UUID()
+        let text: String
+    }
+
+    private let assistantAnchor = "assistant-anchor"
 
     init(
         context: AppContext,
@@ -31,14 +42,23 @@ struct VisitFormView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                customerSection
-                contactsSection
-                VoiceNoteSection(controller: model.voice, note: $model.note)
-                topicSection
-                nextStepSection
-                opportunitySection
-                detailsSection
+            ScrollViewReader { proxy in
+                Form {
+                    customerSection
+                    contactsSection
+                    VoiceNoteSection(controller: model.voice, note: $model.note)
+                    assistantSection
+                    topicSection
+                    nextStepSection
+                    opportunitySection
+                    detailsSection
+                }
+                .task {
+                    // Yalnızca ekran görüntüsü senaryosu: Claude düğmelerine kaydır.
+                    guard model.seed.scrollToAssistant else { return }
+                    try? await Task.sleep(for: .milliseconds(800))
+                    proxy.scrollTo(assistantAnchor, anchor: .center)
+                }
             }
             .scrollContentBackground(.hidden)
             .onChange(of: model.customer?.id) { model.customerChanged() }
@@ -71,8 +91,18 @@ struct VisitFormView: View {
                 if model.seed.autoStartRecording {
                     await model.voice.start()
                 }
+                if let reply = model.seed.pastedReply {
+                    try? await Task.sleep(for: .milliseconds(800))
+                    preview = SuggestionPreview(suggestion: ClaudeReplyParser.parse(reply))
+                }
             }
             .onDisappear { model.voice.stop() }
+            .sheet(item: $shareText) { item in
+                ShareSheet(text: item.text, subject: "Ziyaret notu")
+            }
+            .sheet(item: $preview) { item in
+                ClaudePreviewView(suggestion: item.suggestion) { model.apply(item.suggestion) }
+            }
         }
         .tint(Theme.brandText)
     }
@@ -127,6 +157,70 @@ struct VisitFormView: View {
                 }
             }
             .listRowBackground(Theme.surface)
+        }
+    }
+
+    /// Görüşme notunun altı: "Claude ile düzenle" (paylaş + panoya kopyala) ve "Claude cevabını yapıştır".
+    private var assistantSection: some View {
+        Section {
+            Button { askAssistant() } label: {
+                Label("Claude ile düzenle", systemImage: "sparkles")
+            }
+            .disabled(!model.canAskAssistant)
+            Button { pasteReply() } label: {
+                Label("Claude cevabını yapıştır", systemImage: "doc.on.clipboard")
+            }
+            .id(assistantAnchor)
+            if let assistantMessage {
+                Text(assistantMessage)
+                    .font(.callout)
+                    .foregroundStyle(Theme.overdue)
+            }
+            if !model.rawTranscript.isEmpty && model.rawTranscript != model.note {
+                DisclosureGroup("Ham not (saklanıyor)") {
+                    Text(model.rawTranscript)
+                        .font(.callout)
+                        .foregroundStyle(Theme.textSecondary)
+                        .textSelection(.enabled)
+                }
+            }
+        } footer: {
+            Text(promptCopied
+                 ? "Metin panoya da kopyalandı. Claude'un cevabını kopyalayıp \"Claude cevabını yapıştır\"a dokunun."
+                 : "Paylaşım menüsünden Claude uygulamasını seçin; cevabı kopyalayıp buraya yapıştırın. Müşteri seçilmeli ve not dolu olmalı.")
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private func askAssistant() {
+        model.voice.stop()
+        assistantMessage = nil
+        let input = model.assistantInput(instruction: context.settings.claudeInstruction)
+        Task { @MainActor in
+            do {
+                switch try await context.noteAssistant.request(input) {
+                case .handoff(let text):
+                    UIPasteboard.general.string = text
+                    promptCopied = true
+                    shareText = ShareText(text: text)
+                case .suggestion(let suggestion):
+                    preview = SuggestionPreview(suggestion: suggestion)
+                }
+            } catch {
+                assistantMessage = "Not düzenlenemedi: \(error.localizedDescription)"
+            }
+        }
+    }
+
+    private func pasteReply() {
+        let text = (UIPasteboard.general.string ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty {
+            assistantMessage = "Panoda metin yok. Claude'un cevabını kopyalayıp tekrar deneyin."
+        } else if ShareToClaudeAssistant.isOwnPrompt(text) {
+            assistantMessage = "Panoda hâlâ Claude'a gönderilen metin var. Önce Claude'un cevabını kopyalayın."
+        } else {
+            assistantMessage = nil
+            preview = SuggestionPreview(suggestion: ClaudeReplyParser.parse(text))
         }
     }
 

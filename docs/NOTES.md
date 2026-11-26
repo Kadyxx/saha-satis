@@ -604,3 +604,16 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
 - **Giriş noktaları:** Müşteriler üst çubuğu (kartvizit simgesi) ve müşteri detayı → Kişiler → "Kartvizit tara". İzin metni `NSCameraUsageDescription` (Türkçe).
 - **Ekran görüntüleri:** `screen-cardResult-*` (eşleşen firma) ve `screen-cardResultNew-*` (yeni firma), hayali kartvizit metinleriyle.
 - **Elle denenmesi gerekenler (gerçek iPhone):** kamera izni, canlı taramada Türkçe karakterler, fotoğraftan okuma, izin reddedilince yedek yol.
+
+## Faz 4b – Claude ile not düzenleme (kararlar)
+
+- **API yok:** `NoteAssistant` protokolü `.handoff(text)` (kullanıcı metni götürür) veya `.suggestion(NoteSuggestion)` (doğrudan öneri) döndürür. Şimdiki uygulama `ShareToClaudeAssistant` (`.handoff`); ileride API uygulaması `.suggestion` döndürür, form ve önizleme aynı kalır. Seçim `AppContext.noteAssistant`.
+- **Gönderilen metin:** talimat + bugünün tarihi (GG.AA.YYYY) + müşteri adı + işaretli kişiler ("Ad (Unvan)") + "Ham not:" + formdaki not. SPEC'teki "kurulu baz" girdisi istenmediği için eklenmedi. Aynı anda panoya kopyalanır ve sistem paylaşım menüsü açılır. Düğme müşteri seçili ve not doluyken etkin; açık sesli kayıt önce bitirilir.
+- **Yapıştırma:** `UIPasteboard` okunur; iOS başka uygulamadan kopyalanan metin için izin sorabilir (sistem `PasteButton`ı düğme adını değiştirtmediği için kullanılmadı). Panoda hâlâ bizim gönderdiğimiz metin varsa uyarılır (gönderilen metin de şablonu içerdiği için cevap sanılmasın).
+- **Ayrıştırma (`ClaudeReplyParser`):** etiketler büyük/küçük harf ve Türkçe karakter duyarsız; Markdown süsleri ve şablon dışı metin tolere edilir. **"Özet" yoksa ya da boşsa şablon bozuk sayılır:** metnin tamamı nota, uyarıyla; diğer alanlar değişmez. Diğer alanların eksikliği hata değildir. "-", "Yok", "(yoksa boş)" boş sayılır. Tarih: GG.AA.YYYY, `/` ve `-`, iki haneli yıl, YYYY-AA-GG, "4 Aralık [2026]", "04.12" (yılsız geçmiş tarih gelecek yıl); anlaşılamayan veya geçersiz tarih uyarı verir.
+- **Onay:** önizlemede "Forma uygula" denmeden form değişmez. Boş gelen alanlar formdaki değeri silmez; not Özet ile değiştirilir. Ziyaret yine ancak "Kaydet" ile kaydedilir.
+- **Ham not:** uygulamadan hemen önce formdaki not `Visit.transcript`'e eklenir (dikte metni zaten oradaysa tekrarlanmaz; önceki öneri değiştirilmeden duruyorsa eklenmez). Formda "Ham not (saklanıyor)" açılır alanından görülür. CRM raporuna girmez.
+- **Ayarlar → Claude ile düzenleme → Claude talimatı:** düzenlenebilir, "Varsayılana dön" (onaylı). Varsayılana eşit metin saklanmaz; boş bırakılırsa varsayılan gönderilir.
+- **Bilinen sınır:** form açıkken Claude uygulamasına geçilir; iOS uygulamayı arka planda kapatırsa kaydedilmemiş form kaybolur (ham metin panodaki gönderilen metinde kalır, cevap kopyalanınca onun yerini alır).
+- **Ekran görüntüleri:** `screen-claudeButtons-*`, `screen-claudePreview-*`, `screen-claudeBroken-*`, `screen-settingsClaude-*`.
+- **Elle denenmesi gerekenler (gerçek iPhone):** paylaşım menüsünde Claude uygulamasının çıkması ve metnin gelmesi, cevabı kopyalayıp yapıştırma (izin penceresi), Claude'un şablona uyması.

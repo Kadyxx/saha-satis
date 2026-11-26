@@ -35,6 +35,10 @@ enum DebugScene: String {
     case installedBaseForm
     case cardResult
     case cardResultNew
+    case claudeButtons
+    case claudePreview
+    case claudeBroken
+    case settingsClaude
 }
 
 enum DebugLaunch {

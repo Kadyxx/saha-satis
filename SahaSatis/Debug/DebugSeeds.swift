@@ -21,4 +21,30 @@ extension VisitFormSeed {
         selectFirstContacts: 1,
         autoStartRecording: true
     )
+
+    /// Ham (dikte edilmiş gibi) not; "Claude ile düzenle" düğmelerine kaydırılır.
+    static let showcaseAssistant = VisitFormSeed(
+        note: "ahmet beyle görüştük hat üçteki 1756-L61 eskimiş yedek bulamıyorlar L8 serisine geçiş için teklif istediler haftaya göndereceğiz",
+        selectFirstContacts: 1,
+        scrollToAssistant: true
+    )
+
+    /// Şablona uygun cevabın önizlemesi.
+    static let showcasePreview: VisitFormSeed = {
+        var seed = showcaseAssistant
+        seed.pastedReply = """
+        Konu: Hat 3 PLC yenileme
+        Özet: Hat 3'te kullanılan 1756-L61 denetleyicilerin yedek parça temininde sorun yaşandığı iletilmiştir. ControlLogix L8 serisine geçiş için teklif talep edilmiştir.
+        Sonraki adım: Geçiş teklifi hazırlanıp gönderilecek
+        Takip tarihi: 04.12.2026
+        """
+        return seed
+    }()
+
+    /// Şablona uymayan cevap: uyarılı önizleme.
+    static let showcaseBrokenPreview: VisitFormSeed = {
+        var seed = showcaseAssistant
+        seed.pastedReply = "Tabii, notu düzenledim: Hat 3'teki 1756-L61 denetleyiciler için geçiş teklifi istendi."
+        return seed
+    }()
 }

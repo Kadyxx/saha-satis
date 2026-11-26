@@ -25,7 +25,8 @@ struct RootTabView: View {
         switch scene {
         case nil: return .today
         case .settings, .settingsReminders, .settingsCities: return .settings
-        case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory: return .customers
+        case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory,
+             .importMapping, .importPreview: return .customers
         case .today, .todayForm, .export, .exportPreview: return .today
         case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm: return .pipeline

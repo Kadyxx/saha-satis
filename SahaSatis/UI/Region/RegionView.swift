@@ -93,6 +93,8 @@ struct RegionView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .listSectionSpacing(.compact)
+        .contentMargins(.top, 0, for: .scrollContent)
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
         .navigationTitle("Bölge")
@@ -124,6 +126,8 @@ struct RegionView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .listSectionSpacing(.compact)
+        .contentMargins(.top, 0, for: .scrollContent)
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
         .navigationTitle(RegionNaming.city(city))
@@ -157,6 +161,8 @@ struct RegionView: View {
             }
         }
         .scrollContentBackground(.hidden)
+        .listSectionSpacing(.compact)
+        .contentMargins(.top, 0, for: .scrollContent)
         .background(Theme.background)
         .visitButton(onSaved: { model.reload() })
         .navigationTitle(RegionNaming.district(district))

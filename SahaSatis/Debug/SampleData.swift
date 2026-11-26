@@ -322,3 +322,20 @@ enum SampleData {
     }
 }
 #endif
+
+#if DEBUG
+extension SampleData {
+    /// İçe aktarma ekran görüntüleri için hayali CSV (Türkçe Excel biçimi: `;` ayraç). Bir satır mevcut müşteriyle
+    /// çakışır, bir satır hatalıdır.
+    static let importCSV = """
+    Firma Adı;İl;İlçe;OSB;Sektör;Adres;Telefon;E-posta;Yetkili
+    Örnek Makina A.Ş.;Bursa;Nilüfer;Bursa OSB;Makine imalatı;;;;
+    Örnek Döküm Ltd.;bursa;nilufer;Bursa OSB;Döküm;;0555 000 00 21;dokum@example.com;Veli Kaya
+    Örnek Ambalaj A.Ş.;Balıkesir;Bandırma;;Ambalaj;;0555 000 00 22;;Zeynep Ak
+    Örnek Cam San.;Eskişehir;Tepebasi;Eskişehir OSB;Cam;;;;
+    Örnek Kimya A.Ş.;Çanakkale;Biga;;Kimya;;;;Can Er
+    ;Bursa;Osmangazi;;Boş firma;;;;
+    Örnek Mobilya Ltd.;Bilecik;Bozüyük;;Mobilya;;;mobilya-example;
+    """
+}
+#endif

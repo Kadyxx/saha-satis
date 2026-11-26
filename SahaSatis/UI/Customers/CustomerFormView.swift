@@ -51,6 +51,8 @@ struct CustomerFormView: View {
     let customer: Customer?
     let repository: CustomerRepository
     let onSaved: () -> Void
+    /// Yalnızca yeni kayıtta, kaydedilen müşteriyle çağrılır (kartvizitteki kişiyi eklemek için).
+    private let onCreated: ((Customer) -> Void)?
 
     @Environment(\.dismiss) private var dismiss
     @State private var draft: CustomerDraft
@@ -59,12 +61,22 @@ struct CustomerFormView: View {
     @State private var districtIsOther: Bool
     private let cityOptions: [String]
 
-    /// - Parameter cities: Kullanıcının bölge şehirleri (`AppSettings.responsibleCities`).
-    init(customer: Customer?, repository: CustomerRepository, cities: [String], onSaved: @escaping () -> Void = {}) {
+    /// - Parameters:
+    ///   - cities: Kullanıcının bölge şehirleri (`AppSettings.responsibleCities`).
+    ///   - initialDraft: Yeni kayıtta formun dolu açılacağı taslak (kartvizit tarama).
+    init(
+        customer: Customer?,
+        repository: CustomerRepository,
+        cities: [String],
+        initialDraft: CustomerDraft? = nil,
+        onCreated: ((Customer) -> Void)? = nil,
+        onSaved: @escaping () -> Void = {}
+    ) {
         self.customer = customer
         self.repository = repository
+        self.onCreated = onCreated
         self.onSaved = onSaved
-        var initial = customer.map { CustomerDraft(customer: $0) } ?? CustomerDraft()
+        var initial = customer.map { CustomerDraft(customer: $0) } ?? initialDraft ?? CustomerDraft()
         // Kayıtlı ilçe listedekiyle yalnızca yazım farkıyla eşleşiyorsa resmi yazıma çekilir.
         if let official = DistrictCatalog.match(initial.district, city: initial.city) { initial.district = official }
         _districtIsOther = State(initialValue: Self.isOtherDistrict(initial))
@@ -213,6 +225,7 @@ struct CustomerFormView: View {
                 let created = Customer(name: draft.trimmedName)
                 draft.apply(to: created)
                 try repository.add(created)
+                onCreated?(created)
             }
             onSaved()
             dismiss()

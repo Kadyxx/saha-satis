@@ -27,6 +27,7 @@ struct CustomersView: View {
     @State private var importSession: ImportSession?
     @State private var showFileImporter = false
     @State private var importError: String?
+    @State private var cardSession: CardScanSession?
 
     init(repositories: Repositories, settings: AppSettings, debugScene: DebugScene? = nil) {
         self.repositories = repositories
@@ -56,6 +57,12 @@ struct CustomersView: View {
                     }
                     .accessibilityLabel("CSV'den içe aktar")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { cardSession = CardScanSession() } label: {
+                        Image(systemName: "person.text.rectangle")
+                    }
+                    .accessibilityLabel("Kartvizit tara")
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button { editTarget = CustomerEditTarget(customer: nil) } label: {
                         Image(systemName: "plus")
@@ -82,6 +89,9 @@ struct CustomersView: View {
             }
             .sheet(item: $debugVisit, onDismiss: { model.reload() }) { target in
                 VisitFormView(context: appContext, customer: target.customer, visit: nil, seed: target.seed)
+            }
+            .sheet(item: $cardSession, onDismiss: { model.reload() }) { session in
+                BusinessCardFlowView(repositories: repositories, settings: settings, session: session)
             }
             .sheet(item: $importSession, onDismiss: { model.reload() }) { session in
                 CustomerImportView(
@@ -249,6 +259,12 @@ struct CustomersView: View {
              .quotes, .quoteDetail, .quoteForm,
              .region, .regionCity, .regionDistrict, .weekDay:
             break
+        case .cardResult, .cardResultNew:
+            #if DEBUG
+            cardSession = CardScanSession(
+                sampleText: scene == .cardResult ? SampleData.cardMatching : SampleData.cardNewCompany
+            )
+            #endif
         case .detail, .visitHistory, .installedBase, .installedBaseForm:
             if let showcase { path.append(showcase) }
         case .form:

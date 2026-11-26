@@ -48,6 +48,7 @@ targets:
         CFBundleDevelopmentRegion: tr
         CFBundleLocalizations:
           - tr
+        NSCameraUsageDescription: Kartvizitleri okuyup kişi ve müşteri bilgilerini doldurmak için kamera kullanılır. Görüntü cihazınızdan çıkmaz ve kaydedilmez.
         NSMicrophoneUsageDescription: Ziyaret notlarını sesle kaydedebilmeniz için mikrofona erişim gerekir. Ses yalnızca konuşmayı metne çevirmek için kullanılır.
         NSSpeechRecognitionUsageDescription: Sesli ziyaret notunuzu Türkçe metne çevirmek için konuşma tanıma kullanılır.
         UILaunchScreen: {}

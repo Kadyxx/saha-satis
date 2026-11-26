@@ -35,6 +35,7 @@ struct CustomerDetailView: View {
     @State private var visitToDelete: Visit?
     @State private var showingEdit = false
     @State private var contactTarget: ContactEditTarget?
+    @State private var cardSession: CardScanSession?
     @State private var confirmingDelete = false
     @State private var productTarget: ProductEditTarget?
     @State private var migrationTarget: MigrationTarget?
@@ -139,6 +140,11 @@ struct CustomerDetailView: View {
                 onSaved: reloadContacts
             )
         }
+        .sheet(item: $cardSession, onDismiss: reloadContacts) { session in
+            BusinessCardFlowView(
+                repositories: repositories, settings: settings, session: session, fixedCustomer: customer
+            )
+        }
         .sheet(item: $visitTarget) { target in
             VisitFormView(context: appContext, customer: customer, visit: target.visit, onSaved: reloadVisits)
         }
@@ -228,6 +234,11 @@ struct CustomerDetailView: View {
                 contactTarget = ContactEditTarget(contact: nil)
             } label: {
                 Label("Kişi ekle", systemImage: "plus")
+            }
+            Button {
+                cardSession = CardScanSession()
+            } label: {
+                Label("Kartvizit tara", systemImage: "person.text.rectangle")
             }
         }
         .listRowBackground(Theme.surface)

@@ -33,6 +33,8 @@ enum DebugScene: String {
     case weekDay
     case installedBase
     case installedBaseForm
+    case cardResult
+    case cardResultNew
 }
 
 enum DebugLaunch {

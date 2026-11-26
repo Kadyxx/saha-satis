@@ -340,3 +340,32 @@ extension SampleData {
     """
 }
 #endif
+
+#if DEBUG
+extension SampleData {
+    /// Hayali kartvizit metni: firması örnek veride kayıtlı ("Bu müşteriye kişi olarak ekle").
+    static let cardMatching = """
+    ÖRNEK MAKİNA SAN. VE TİC. A.Ş.
+    ZEYNEP KARACA
+    Satın Alma Uzmanı
+    Tel: +90 224 000 00 10
+    GSM: +90 532 000 00 11
+    zeynep.karaca@example.com
+    www.example.com
+    Örnek OSB Mah. 1. Cad. No: 5
+    16140 Nilüfer / BURSA
+    """
+
+    /// Hayali kartvizit metni: kayıtlı olmayan firma ("Yeni müşteri oluştur").
+    static let cardNewCompany = """
+    Hayal Otomasyon Ltd. Şti.
+    Deniz Aydın
+    Bakım Müdürü
+    M: 0533 000 00 22
+    deniz.aydin@example.org
+    www.example.org
+    Deneme Sanayi Sitesi 12. Sok. No: 8
+    Osmangazi / Bursa
+    """
+}
+#endif

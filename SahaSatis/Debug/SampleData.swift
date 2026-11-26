@@ -24,7 +24,8 @@ enum SampleData {
         try repositories.contacts.add(ahmet, to: ornek)
         try repositories.contacts.add(ayse, to: ornek)
         try repositories.installedProducts.add(InstalledProduct(catalogNumber: "1756-L71", productFamily: "ControlLogix", quantity: 2), to: ornek)
-        try repositories.installedProducts.add(InstalledProduct(catalogNumber: "PLC-5/40", productFamily: "PLC-5", lifecycleStatus: .discontinued), to: ornek)
+        try repositories.installedProducts.add(InstalledProduct(catalogNumber: "PLC-5/40", productFamily: "PLC-5", quantity: 2, lifecycleStatus: .discontinued, notes: "Hat 3 panosunda; yedek parça bulmak zor."), to: ornek)
+        try repositories.installedProducts.add(InstalledProduct(catalogNumber: "1747-L542", productFamily: "SLC 500", quantity: 3, lifecycleStatus: .endOfLife, notes: "Hat 2"), to: ornek)
 
         // Fırsatlar (hayali). İlk fırsatın başlığı `PipelineView`'daki ekran görüntüsü senaryosuyla eşleşmeli.
         func inDays(_ days: Double) -> Date { now.addingTimeInterval(days * 86_400) }

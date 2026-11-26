@@ -19,6 +19,9 @@ struct CustomerDetailView: View {
     let onDelete: (Customer) -> Void
     /// Yalnızca ekran görüntüsü senaryosu: açılışta ziyaret geçmişine kaydırır.
     var scrollToHistory = false
+    /// Yalnızca ekran görüntüsü senaryoları: kurulu baza kaydırır / ilk migrasyon ürününün formunu açar.
+    var scrollToInstalledBase = false
+    var openMigrationProductForm = false
 
     @EnvironmentObject private var appContext: AppContext
     @Environment(\.openURL) private var openURL
@@ -33,9 +36,15 @@ struct CustomerDetailView: View {
     @State private var showingEdit = false
     @State private var contactTarget: ContactEditTarget?
     @State private var confirmingDelete = false
+    @State private var productTarget: ProductEditTarget?
+    @State private var migrationTarget: MigrationTarget?
+    @State private var productToDelete: InstalledProduct?
+    @State private var didRunDebugScene = false
+    @State private var installedBaseTick = 0
     @State private var errorMessage: String?
 
     var body: some View {
+        let _ = installedBaseTick
         ScrollViewReader { proxy in
             List {
                 headerSection
@@ -47,6 +56,19 @@ struct CustomerDetailView: View {
                 installedBaseSection
             }
             .task {
+                if scrollToInstalledBase {
+                    try? await Task.sleep(for: .milliseconds(600))
+                    proxy.scrollTo(installedBaseAnchor, anchor: .top)
+                    return
+                }
+                if openMigrationProductForm, !didRunDebugScene {
+                    didRunDebugScene = true
+                    try? await Task.sleep(for: .milliseconds(600))
+                    if let product = (customer.installedBase ?? []).first(where: { $0.productFamily == "PLC-5" }) {
+                        productTarget = ProductEditTarget(product: product)
+                    }
+                    return
+                }
                 guard scrollToHistory else { return }
                 try? await Task.sleep(for: .milliseconds(600))
                 proxy.scrollTo(historyAnchor, anchor: .top)
@@ -78,6 +100,32 @@ struct CustomerDetailView: View {
         }
         .sheet(isPresented: $showingNewOpportunity, onDismiss: reloadOpportunities) {
             OpportunityFormView(context: appContext, opportunity: nil, customer: customer, onSaved: reloadOpportunities)
+        }
+        .sheet(item: $productTarget, onDismiss: { reloadInstalledBase() }) { target in
+            InstalledProductFormView(
+                customer: customer,
+                product: target.product,
+                families: settings.productFamilies,
+                repository: repositories.installedProducts,
+                onSaved: reloadInstalledBase
+            )
+        }
+        .sheet(item: $migrationTarget, onDismiss: reloadOpportunities) { target in
+            OpportunityFormView(
+                context: appContext, opportunity: nil, customer: customer,
+                prefill: MigrationOpportunityPrefill(product: target.product), onSaved: reloadOpportunities
+            )
+        }
+        .confirmationDialog(
+            "Bu ürün kurulu bazdan silinsin mi?",
+            isPresented: Binding(get: { productToDelete != nil }, set: { if !$0 { productToDelete = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Ürünü sil", role: .destructive) {
+                if let product = productToDelete { delete(product) }
+                productToDelete = nil
+            }
+            Button("Vazgeç", role: .cancel) { productToDelete = nil }
         }
         .sheet(isPresented: $showingEdit) {
             CustomerFormView(
@@ -189,6 +237,7 @@ struct CustomerDetailView: View {
     }
 
     private let historyAnchor = "visit-history-anchor"
+    private let installedBaseAnchor = "installed-base-anchor"
 
     /// Ziyaret geçmişi: en yeni üstte; satıra dokunmak ziyareti açıp düzenlemeyi sağlar.
     private var visitsSection: some View {
@@ -289,31 +338,88 @@ struct CustomerDetailView: View {
         .listRowBackground(Theme.surface)
     }
 
+    /// Kurulu baz: ürün ekle/düzenle/sil; ömrünü tamamlayan ürünlerde "Fırsat aç" (migrasyon).
     private var installedBaseSection: some View {
-        Section("Kurulu baz") {
+        Section {
             let products = (customer.installedBase ?? [])
-                .sorted { $0.catalogNumber < $1.catalogNumber }
+                .sorted { $0.catalogNumber.localizedCaseInsensitiveCompare($1.catalogNumber) == .orderedAscending }
             if products.isEmpty {
                 Text("Kurulu baz kaydı yok.")
                     .font(.callout)
                     .foregroundStyle(Theme.textSecondary)
             } else {
                 ForEach(products) { product in
-                    HStack {
-                        Text(product.catalogNumber)
-                            .foregroundStyle(Theme.textPrimary)
-                        Spacer()
-                        Text(product.lifecycleStatus.title)
-                            .font(.caption)
-                            .foregroundStyle(Theme.textSecondary)
-                    }
+                    installedProductRow(product)
+                        .id(product.id == products.first?.id ? installedBaseAnchor : product.id.uuidString)
                 }
             }
+            Button { productTarget = ProductEditTarget(product: nil) } label: {
+                Label("Ürün ekle", systemImage: "plus")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .buttonStyle(.borderless)
+        } header: {
+            Text("Kurulu baz")
         }
         .listRowBackground(Theme.surface)
     }
 
+    private func installedProductRow(_ product: InstalledProduct) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Button { productTarget = ProductEditTarget(product: product) } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(product.catalogNumber)
+                            .font(.headline)
+                            .foregroundStyle(Theme.textPrimary)
+                        Text("× \(product.quantity)")
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    if !product.productFamily.isEmpty {
+                        Text(product.productFamily)
+                            .font(.subheadline)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                    Text(product.lifecycleStatus.title)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(product.lifecycleStatus.isMigrationCandidate ? Theme.overdue : Theme.textSecondary)
+                    if !product.notes.isEmpty {
+                        Text(product.notes)
+                            .font(.caption)
+                            .foregroundStyle(Theme.textSecondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+            Button("Fırsat aç") { migrationTarget = MigrationTarget(product: product) }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.bordered)
+                .fixedSize()
+        }
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) { productToDelete = product } label: {
+                Label("Sil", systemImage: "trash")
+            }
+        }
+    }
+
     // MARK: - İşlemler
+
+    /// Kurulu baz değişince ilişkili listeyi ve "Migrasyon fırsatı" etiketini yeniler.
+    private func reloadInstalledBase() {
+        installedBaseTick += 1
+    }
+
+    private func delete(_ product: InstalledProduct) {
+        do {
+            try repositories.installedProducts.delete(product)
+            reloadInstalledBase()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     private func reloadOpportunities() {
         let all = (try? repositories.opportunities.opportunities(for: customer)) ?? []
@@ -420,4 +526,14 @@ private struct ContactRow: View {
         }
         .padding(.vertical, 2)
     }
+}
+
+private struct ProductEditTarget: Identifiable {
+    let id = UUID()
+    let product: InstalledProduct?
+}
+
+private struct MigrationTarget: Identifiable {
+    let id = UUID()
+    let product: InstalledProduct
 }

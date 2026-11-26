@@ -49,6 +49,6 @@ final class CustomerListModel {
     }
 
     var hasActiveFilter: Bool {
-        filter.city != nil || filter.district != nil || filter.status != nil || filter.rating != nil
+        filter.city != nil || filter.district != nil || filter.status != nil || filter.rating != nil || filter.migration
     }
 }

@@ -8,6 +8,8 @@ struct CustomerFilter: Equatable, Sendable {
     var district: String?
     var status: CustomerStatus?
     var rating: CustomerRating?
+    /// Kurulu bazda ömrünü tamamlayan / üretimi duran ürünü olan müşteriler ("Migrasyon fırsatı").
+    var migration = false
     var sort: CustomerSort = .name
 }
 
@@ -63,6 +65,9 @@ final class SwiftDataCustomerRepository: CustomerRepository {
         }
         if let status = filter.status {
             result = result.filter { $0.status == status }
+        }
+        if filter.migration {
+            result = result.filter(.hasMigrationOpportunity)
         }
         if let rating = filter.rating {
             result = result.filter { $0.rating == rating }

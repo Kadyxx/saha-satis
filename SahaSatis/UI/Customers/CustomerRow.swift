@@ -33,6 +33,9 @@ struct CustomerRow: View {
             }
             .font(.caption)
             .foregroundStyle(Theme.textSecondary)
+            if customer.hasMigrationOpportunity {
+                TagLabel(text: "Migrasyon fırsatı")
+            }
         }
         .padding(.vertical, 2)
     }

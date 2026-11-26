@@ -84,6 +84,7 @@ final class AppSettings: ObservableObject {
         static let currency = "general.defaultCurrency"
         static let crmEmail = "export.crmEmail"
         static let cityPlan = "weekPlan.cities"
+        static let productFamilies = "installedBase.productFamilies"
     }
 
     private let defaults: UserDefaults
@@ -141,6 +142,13 @@ final class AppSettings: ObservableObject {
     /// Gün anahtarı (`yyyy-MM-dd`) → o gün gidilecek şehirler. Boş/yok = plan yok. Eski haftalar silinir (`WeekPlan`).
     @Published var cityPlan: [String: [String]] { didSet { defaults.set(cityPlan, forKey: Key.cityPlan) } }
 
+    // MARK: Kurulu baz
+
+    /// Ürün aileleri (ad + varsayılan yaşam döngüsü). Hiç kaydedilmemişse örnek aileler; boş liste bilinçli seçimdir.
+    @Published var productFamilies: [ProductFamily] {
+        didSet { defaults.set(try? JSONEncoder().encode(productFamilies), forKey: Key.productFamilies) }
+    }
+
     // MARK: Başlatma
 
     init(defaults: UserDefaults = AppSettings.sharedDefaults) {
@@ -177,6 +185,8 @@ final class AppSettings: ObservableObject {
         defaultCurrency = defaults.string(forKey: Key.currency).flatMap(Currency.init(rawValue:)) ?? .tl
         crmEmail = defaults.string(forKey: Key.crmEmail) ?? ""
         cityPlan = (defaults.dictionary(forKey: Key.cityPlan) as? [String: [String]]) ?? [:]
+        productFamilies = defaults.data(forKey: Key.productFamilies)
+            .flatMap { try? JSONDecoder().decode([ProductFamily].self, from: $0) } ?? ProductFamily.defaults
     }
 
     /// App Group paylaşımlı UserDefaults. Grup kimliği Info.plist'teki `AppGroupID` anahtarından gelir

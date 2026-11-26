@@ -126,7 +126,7 @@ enum LifecycleStatus: String, Codable, CaseIterable, Sendable {
         switch self {
         case .active: return "Aktif"
         case .activeMature: return "Aktif (olgun)"
-        case .endOfLife: return "Ömrünü tamamlıyor"
+        case .endOfLife: return "Üretim sonu"
         case .discontinued: return "Üretimden kalktı"
         }
     }

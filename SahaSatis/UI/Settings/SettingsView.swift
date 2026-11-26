@@ -2,6 +2,7 @@ import SwiftUI
 
 enum SettingsRoute: Hashable {
     case cities
+    case productFamilies
 }
 
 /// Ayarlar sekmesi: profil, bölge, hatırlatmalar, dışa aktarma ve hakkında.
@@ -28,6 +29,7 @@ struct SettingsView: View {
                 Form {
                     profileSection
                     regionSection
+                    installedBaseSection
                     remindersSection
                     visitFrequencySection
                     opportunitySection
@@ -50,6 +52,8 @@ struct SettingsView: View {
                 switch route {
                 case .cities:
                     CitiesSettingsView(settings: settings)
+                case .productFamilies:
+                    ProductFamiliesSettingsView(settings: settings)
                 }
             }
         }
@@ -79,6 +83,19 @@ struct SettingsView: View {
             Text("Bölge")
         } footer: {
             Text("Müşteri formundaki şehir seçimi bu listeden gelir.")
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var installedBaseSection: some View {
+        Section {
+            NavigationLink(value: SettingsRoute.productFamilies) {
+                LabeledContent("Ürün aileleri", value: "\(settings.productFamilies.count) aile")
+            }
+        } header: {
+            Text("Kurulu baz")
+        } footer: {
+            Text("Aile adı ve varsayılan yaşam döngüsü. Örnek aileleri (PLC-5, SLC 500) Rockwell yaşam döngüsü sayfasından doğrulayın.")
         }
         .listRowBackground(Theme.surface)
     }

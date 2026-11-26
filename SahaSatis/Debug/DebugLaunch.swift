@@ -31,6 +31,8 @@ enum DebugScene: String {
     case importMapping
     case importPreview
     case weekDay
+    case installedBase
+    case installedBaseForm
 }
 
 enum DebugLaunch {

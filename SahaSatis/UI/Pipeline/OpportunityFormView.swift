@@ -8,7 +8,10 @@ struct OpportunityFormView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model: OpportunityFormModel
 
-    init(context: AppContext, opportunity: Opportunity?, customer: Customer?, onSaved: @escaping () -> Void = {}) {
+    init(
+        context: AppContext, opportunity: Opportunity?, customer: Customer?,
+        prefill: MigrationOpportunityPrefill? = nil, onSaved: @escaping () -> Void = {}
+    ) {
         self.context = context
         self.onSaved = onSaved
         _model = State(initialValue: OpportunityFormModel(
@@ -16,7 +19,9 @@ struct OpportunityFormView: View {
             reminderRules: context.settings.opportunityReminderRules,
             defaultCurrency: context.settings.defaultCurrency,
             opportunity: opportunity,
-            customer: customer
+            customer: customer,
+            prefillTitle: prefill?.title ?? "",
+            prefillDetails: prefill?.details ?? ""
         ))
     }
 

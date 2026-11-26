@@ -26,7 +26,7 @@ struct RootTabView: View {
         case nil: return .today
         case .settings, .settingsReminders, .settingsCities: return .settings
         case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory,
-             .importMapping, .importPreview: return .customers
+             .importMapping, .importPreview, .installedBase, .installedBaseForm: return .customers
         case .today, .todayForm, .export, .exportPreview, .weekDay: return .today
         case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm: return .pipeline

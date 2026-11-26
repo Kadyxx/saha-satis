@@ -79,7 +79,8 @@ jobs:
             for mode in light dark; do
               xcrun simctl ui "$UDID" appearance "$mode"
               xcrun simctl launch "$UDID" "$BUNDLE_ID" -AppleLanguages "(tr)" -AppleLocale tr_TR -DebugSampleData -DebugScene "$scene"
-              sleep 5
+              # Üst üste iki sheet açan senaryolar yavaş runner'da 5 sn'ye yetişmeyebiliyor.
+              case "$scene" in claude*) sleep 12 ;; *) sleep 5 ;; esac
               xcrun simctl io "$UDID" screenshot "artifacts/screenshots/screen-$scene-$mode.png"
               xcrun simctl terminate "$UDID" "$BUNDLE_ID" || true
             done

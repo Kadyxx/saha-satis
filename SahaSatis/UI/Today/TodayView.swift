@@ -5,6 +5,7 @@ import SwiftUI
 struct TodayView: View {
     let repositories: Repositories
     @ObservedObject var reminders: ReminderScheduler
+    @ObservedObject var settings: AppSettings
     let debugScene: DebugScene?
 
     @EnvironmentObject private var appContext: AppContext
@@ -15,11 +16,13 @@ struct TodayView: View {
     @State private var postponeTarget: FollowUpTask?
     @State private var customDateTarget: FollowUpTask?
     @State private var showExport = false
+    @State private var planDay: PlanDayTarget?
     @State private var didRunDebugScene = false
 
-    init(repositories: Repositories, reminders: ReminderScheduler, debugScene: DebugScene? = nil) {
+    init(repositories: Repositories, reminders: ReminderScheduler, settings: AppSettings, debugScene: DebugScene? = nil) {
         self.repositories = repositories
         _reminders = ObservedObject(wrappedValue: reminders)
+        _settings = ObservedObject(wrappedValue: settings)
         self.debugScene = debugScene
         _model = State(initialValue: TodayModel(repositories: repositories))
     }
@@ -40,6 +43,9 @@ struct TodayView: View {
                 }
                 .sheet(item: $newTask, onDismiss: { model.reload() }) { seed in
                     ManualTaskFormView(context: appContext, seed: seed, onSaved: { model.reload() })
+                }
+                .sheet(item: $planDay, onDismiss: { model.reload() }) { target in
+                    DayPlanView(day: target.day, repositories: repositories, settings: settings)
                 }
                 .sheet(isPresented: $showExport, onDismiss: { model.reload() }) {
                     VisitExportFlowView(context: appContext, startAtPreview: debugScene == .exportPreview)
@@ -84,6 +90,7 @@ struct TodayView: View {
             if reminders.authorization == .denied {
                 notificationsOffSection
             }
+            WeekStripSection(settings: settings, now: Date()) { planDay = PlanDayTarget(day: $0) }
             visitsSection
             if model.sections.isEmpty {
                 Section {
@@ -220,9 +227,19 @@ struct TodayView: View {
             showExport = true
             return
         }
+        if debugScene == .weekDay {
+            didRunDebugScene = true
+            if let first = WeekPlan.displayedWeek(at: Date(), calendar: .current).first { planDay = PlanDayTarget(day: first) }
+            return
+        }
         guard debugScene == .todayForm else { return }
         didRunDebugScene = true
         let customer = try? repositories.customers.fetchAll().first { $0.name == "Örnek Makina A.Ş." }
         newTask = ManualTaskSeed(title: "Bakım sözleşmesi örneğini Ahmet Bey'e gönder", customer: customer)
     }
+}
+
+private struct PlanDayTarget: Identifiable {
+    let day: Date
+    var id: Date { day }
 }

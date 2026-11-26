@@ -244,7 +244,7 @@ struct CustomersView: View {
         case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview,
              .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm,
-             .region, .regionCity, .regionDistrict:
+             .region, .regionCity, .regionDistrict, .weekDay:
             break
         case .detail, .visitHistory:
             if let showcase { path.append(showcase) }

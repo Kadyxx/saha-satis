@@ -35,6 +35,8 @@ struct ReminderSettingsSnapshot: Equatable, Sendable {
     var endOfDayEnabled = true
     var endOfDayTime = TimeOfDay(hour: 18)
     var weekendNotifications = false
+    /// Haftalık şehir planı: gün anahtarı (`ReminderPlanner.dayKey`) → şehirler. Sabah özetinde gösterilir.
+    var cityPlan: [String: [String]] = [:]
 }
 
 /// Bekleyen bildirimleri hesaplayan saf mantık (SPEC → Hatırlatma motoru → Çalışma mantığı).
@@ -85,7 +87,13 @@ enum ReminderPlanner {
                 guard fire > now else { continue }
                 let dueThatDay = tasks.filter { calendar.isDate($0.dueDate, inSameDayAs: day) }.count
                 let overdue = tasks.filter { $0.dueDate < day }.count
-                guard let body = summaryBody(dueToday: dueThatDay, overdue: overdue) else { continue }
+                let cities = settings.cityPlan[dayKey(day, calendar: calendar)] ?? []
+                let plannedVisits = tasks.filter {
+                    calendar.isDate($0.dueDate, inSameDayAs: day) && $0.title.hasPrefix(WeekPlanTask.titlePrefix)
+                }.count
+                guard let body = summaryBody(
+                    dueToday: dueThatDay, overdue: overdue, cities: cities, plannedVisits: plannedVisits
+                ) else { continue }
                 result.append(PlannedNotification(
                     id: "summary.\(dayKey(day, calendar: calendar))",
                     kind: .morningSummary,
@@ -148,7 +156,16 @@ enum ReminderPlanner {
         }
     }
 
-    private static func dayKey(_ day: Date, calendar: Calendar) -> String {
+    /// Günün şehri planlıysa özetin başına "Bugün Bursa, Yalova: 3 planlı ziyaret" satırı eklenir; takip özeti altına gelir.
+    static func summaryBody(dueToday: Int, overdue: Int, cities: [String], plannedVisits: Int) -> String? {
+        let base = summaryBody(dueToday: dueToday, overdue: overdue)
+        guard !cities.isEmpty else { return base }
+        let visits = plannedVisits == 0 ? "planlı ziyaret yok" : "\(plannedVisits) planlı ziyaret"
+        let head = "Bugün \(cities.joined(separator: ", ")): \(visits)"
+        return base.map { head + "\n" + $0 } ?? head
+    }
+
+    static func dayKey(_ day: Date, calendar: Calendar) -> String {
         let parts = calendar.dateComponents([.year, .month, .day], from: day)
         return String(format: "%04d-%02d-%02d", parts.year ?? 0, parts.month ?? 0, parts.day ?? 0)
     }

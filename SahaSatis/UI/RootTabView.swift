@@ -27,7 +27,7 @@ struct RootTabView: View {
         case .settings, .settingsReminders, .settingsCities: return .settings
         case .customers, .detail, .form, .visitForm, .visitRecording, .visitHistory,
              .importMapping, .importPreview: return .customers
-        case .today, .todayForm, .export, .exportPreview: return .today
+        case .today, .todayForm, .export, .exportPreview, .weekDay: return .today
         case .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm: return .pipeline
         case .region, .regionCity, .regionDistrict: return .region
@@ -36,7 +36,7 @@ struct RootTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            TodayView(repositories: repositories, reminders: context.reminders, debugScene: debugScene)
+            TodayView(repositories: repositories, reminders: context.reminders, settings: settings, debugScene: debugScene)
             .tabItem { Label("Bugün", systemImage: "sun.max") }
             .tag(AppTab.today)
 

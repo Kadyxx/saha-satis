@@ -8,7 +8,8 @@ extension AppSettings {
             morningSummaryTime: morningSummaryTime,
             endOfDayEnabled: endOfDayReminderEnabled,
             endOfDayTime: endOfDayReminderTime,
-            weekendNotifications: weekendNotificationsEnabled
+            weekendNotifications: weekendNotificationsEnabled,
+            cityPlan: cityPlan
         )
     }
 

@@ -569,3 +569,15 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
 - **Telefon/e-posta:** Customer'da bu alanlar yok; Contact'a yazılır. Yetkili adı yoksa "Genel" adlı kişi açılır. Aynı adlı kişi varsa yenisi eklenmez (boş telefon/e-posta doldurulur).
 - **Şablon:** Ayarlar → "İçe aktarma" → ShareLink; UTF-8 + BOM, `;` ayraçlı (Türkçe Excel'de doğrudan açılır).
 - Giriş noktası: Müşteriler üst çubuğundaki indirme simgesi (Dosyalar'dan CSV seçimi).
+
+## Faz 3c – Haftalık şehir planı (kararlar)
+
+- **Saklama:** `AppSettings.cityPlan` (gün anahtarı `yyyy-MM-dd` → şehirler, App Group UserDefaults). Hafta kavramı yok; her gün bağımsız anahtar olduğundan "her hafta yeniden atanır" kendiliğinden sağlanır. 28 günden eski kayıtlar atılır. Ayar değişince hatırlatma motoru zaten yeniden planlar (sabah özeti güncellenir).
+- **Şerit:** Bugün listesinin ilk bölümü (listeyle birlikte kayar). Hafta içi: bu hafta Pzt–Cum; Cumartesi/Pazar: gelecek hafta gösterilir ("Gelecek hafta"). Günde ilk şehir + "+N" görünür. "Geçen haftayı kopyala": önceki haftanın (7 gün öncesi) atamalarını bu haftanın üstüne yazar (önceki hafta boş olan gün boşalır); önceki hafta boşsa düğme pasif.
+- **Gün sayfası:** şehirler çoklu seçilir (Ayarlar'daki sorumlu şehirler), sonra "Önerilen ziyaretler".
+- **Öncelik sırası (SPEC):** 1) gecikmiş takip, 2) geçerliliği yaklaşan teklif, 3) ziyaret sıklığı aşılan, 4) açık fırsat, 5) hiç ziyaret edilmemiş aday. Müşteri en güçlü nedenine göre sıralanır, tüm nedenler satırda (ilk ikisi) yazar. Aynı katmanda önemli → potansiyelli → zayıf, sonra ada göre. Neden yoksa öneri yok; pasifler önerilmez.
+  - "Gecikmiş takip" sayımına ziyaret sıklığı ve teklif geçerlilik görevleri girmez (kendi katmanları var) ve "Ziyaret: …" plan görevleri girmez (plan kendini beslemesin).
+  - "Geçerliliği yaklaşan": bekleyen (Gönderildi/Takipte) teklif, bitişe ≤ ayardaki uyarı günü; süresi dolmuş bekleyen teklif de dahil ("Teklif süresi doldu").
+  - Ziyaret sıklığı: Bölge filtresiyle aynı kural (eşik gün dahil, pasif hariç).
+- **Plana ekle:** "Ziyaret: <firma>" adlı, o güne, ayardaki hatırlatma saatinde, kaynağı "manuel" bir FollowUpTask. Aynı gün aynı müşteri için açık görev varsa tekrar eklemez; satırda "Planlandı" görünür. Bildirimi mevcut görev bildirimi üretir.
+- **Sabah özeti:** günün şehri planlıysa ilk satır "Bugün Bursa, Yalova: 3 planlı ziyaret" (ya da "planlı ziyaret yok"), altına her zamanki takip özeti. Planlı ziyaret sayısı o gün vadeli "Ziyaret: " görevleridir. Şehri planlı ama işi olmayan gün için de özet gönderilir. Plan yoksa metin eskisi gibi.

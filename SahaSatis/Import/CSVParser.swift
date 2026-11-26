@@ -7,8 +7,7 @@ enum CSVParser {
         var bytes = data
         if bytes.starts(with: [0xEF, 0xBB, 0xBF]) { bytes = bytes.dropFirst(3) }
         if let utf8 = String(data: bytes, encoding: .utf8) { return utf8 }
-        if let turkish = String(data: bytes, encoding: .windowsCP1254) { return turkish }
-        return String(data: bytes, encoding: .isoLatin5)
+        return String(data: bytes, encoding: .windowsCP1254)
     }
 
     /// İlk satırdaki (tırnak dışı) `;`, `,` ve sekme sayısına bakarak ayracı seçer; eşitlikte `;` (Türkçe Excel varsayılanı).

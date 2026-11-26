@@ -561,7 +561,7 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
 ## Faz 3b – CSV ile müşteri içe aktarma (kararlar)
 
 - **Bölge filtre çubuğu (adım 0):** çubuk zaten yatay kaydırılabilir; üstteki boşluk `listSectionSpacing(.compact)` + `contentMargins(.top, 0)` ile kapatıldı. Sağ kenardaki "kırpılma" kaydırılabilir şeridin doğal görünümüdür.
-- **Kodlama/ayraç:** önce UTF-8 (BOM atılır), olmazsa Windows-1254, o da olmazsa ISO-8859-9. Ayraç ilk satırdaki tırnak dışı `;` / `,` / sekme sayısına göre seçilir; eşitlikte `;`.
+- **Kodlama/ayraç:** önce UTF-8 (BOM atılır), olmazsa Windows-1254. Ayraç ilk satırdaki tırnak dışı `;` / `,` / sekme sayısına göre seçilir; eşitlikte `;`.
 - **Eşleme:** başlıklar küçük harf + Türkçe karakter sadeleştirilip bilinen yazımlarla (tam, sonra "içerir") eşlenir; her sütun tek alana gider. Firma eşlenmeden "Önizle" kapalı.
 - **Çakışma:** aynı firma adı + şehir (büyük/küçük harf, Türkçe karakter, fazla boşluk duyarsız). Şehir yazımı bölge listesi/kataloga göre resmî ada çevrilerek karşılaştırılır. Çakışanlar için toplu "Atla / Güncelle" (satır bazında seçim yok). Güncelle: yalnızca dolu CSV alanları üstüne yazar; durum ve değerlendirme değişmez.
 - **Hatalı:** firma adı boş, e-posta biçimi geçersiz, dosyada aynı firma+şehrin tekrarı (ilk satır geçerli, sonrakiler hatalı).

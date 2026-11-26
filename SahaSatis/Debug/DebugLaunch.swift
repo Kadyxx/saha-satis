@@ -30,6 +30,7 @@ enum DebugScene: String {
     case regionDistrict
     case importMapping
     case importPreview
+    case weekDay
 }
 
 enum DebugLaunch {
@@ -82,6 +83,12 @@ enum DebugLaunch {
             settings.fullName = "Örnek Satış Mühendisi"
             settings.jobTitle = "Saha Satış Mühendisi"
             settings.crmEmail = "crm@example.com"
+            // Haftalık şehir planı (hayali): şerit ve "Önerilen ziyaretler" ekran görüntüleri için.
+            var plan = WeekPlan()
+            let week = WeekPlan.displayedWeek(at: Date(), calendar: .current)
+            let assignments: [[String]] = [["Bursa"], ["Balıkesir"], ["Bursa", "Yalova"], [], ["Eskişehir"]]
+            for (day, cities) in zip(week, assignments) { plan.set(cities, on: day, calendar: .current) }
+            settings.cityPlan = plan.cities
             return settings
         }
         #endif

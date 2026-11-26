@@ -83,6 +83,7 @@ final class AppSettings: ObservableObject {
         static let oppCloseDays = "reminders.opportunityClose.daysBefore"
         static let currency = "general.defaultCurrency"
         static let crmEmail = "export.crmEmail"
+        static let cityPlan = "weekPlan.cities"
     }
 
     private let defaults: UserDefaults
@@ -135,6 +136,11 @@ final class AppSettings: ObservableObject {
 
     @Published var crmEmail: String { didSet { defaults.set(crmEmail, forKey: Key.crmEmail) } }
 
+    // MARK: Haftalık şehir planı
+
+    /// Gün anahtarı (`yyyy-MM-dd`) → o gün gidilecek şehirler. Boş/yok = plan yok. Eski haftalar silinir (`WeekPlan`).
+    @Published var cityPlan: [String: [String]] { didSet { defaults.set(cityPlan, forKey: Key.cityPlan) } }
+
     // MARK: Başlatma
 
     init(defaults: UserDefaults = AppSettings.sharedDefaults) {
@@ -170,6 +176,7 @@ final class AppSettings: ObservableObject {
         opportunityCloseReminderDays = number(Key.oppCloseDays, Self.defaultOpportunityCloseReminderDays)
         defaultCurrency = defaults.string(forKey: Key.currency).flatMap(Currency.init(rawValue:)) ?? .tl
         crmEmail = defaults.string(forKey: Key.crmEmail) ?? ""
+        cityPlan = (defaults.dictionary(forKey: Key.cityPlan) as? [String: [String]]) ?? [:]
     }
 
     /// App Group paylaşımlı UserDefaults. Grup kimliği Info.plist'teki `AppGroupID` anahtarından gelir

@@ -28,6 +28,8 @@ enum DebugScene: String {
     case region
     case regionCity
     case regionDistrict
+    case importMapping
+    case importPreview
 }
 
 enum DebugLaunch {

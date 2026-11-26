@@ -33,6 +33,7 @@ struct SettingsView: View {
                     opportunitySection
                     quoteSection
                     exportSection
+                    importSection
                     aboutSection
                 }
                 .scrollContentBackground(.hidden)
@@ -168,6 +169,21 @@ struct SettingsView: View {
             Text("Dışa aktarma")
         } footer: {
             Text("Gün sonu ziyaret raporu bu adrese gönderilir.")
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    private var importSection: some View {
+        Section {
+            if let url = try? CustomerCSVTemplate.writeFile() {
+                ShareLink(item: url) {
+                    Label("Örnek CSV şablonunu paylaş", systemImage: "square.and.arrow.up")
+                }
+            }
+        } header: {
+            Text("İçe aktarma")
+        } footer: {
+            Text("Müşteriler sekmesindeki içe aktarma düğmesiyle CSV yükleyin. Şablon Excel'de açılır (ayraç ;, UTF-8).")
         }
         .listRowBackground(Theme.surface)
     }

@@ -24,6 +24,9 @@ struct CustomersView: View {
     @State private var editTarget: CustomerEditTarget?
     @State private var debugVisit: DebugVisitTarget?
     @State private var didRunDebugScene = false
+    @State private var importSession: ImportSession?
+    @State private var showFileImporter = false
+    @State private var importError: String?
 
     init(repositories: Repositories, settings: AppSettings, debugScene: DebugScene? = nil) {
         self.repositories = repositories
@@ -47,6 +50,12 @@ struct CustomersView: View {
             .searchable(text: $model.filter.searchText, prompt: "Firma, şehir, sektör ara")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { filterMenu }
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button { showFileImporter = true } label: {
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .accessibilityLabel("CSV'den içe aktar")
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button { editTarget = CustomerEditTarget(customer: nil) } label: {
                         Image(systemName: "plus")
@@ -71,6 +80,38 @@ struct CustomersView: View {
             }
             .sheet(item: $debugVisit, onDismiss: { model.reload() }) { target in
                 VisitFormView(context: appContext, customer: target.customer, visit: nil, seed: target.seed)
+            }
+            .sheet(item: $importSession, onDismiss: { model.reload() }) { session in
+                CustomerImportView(
+                    repositories: repositories,
+                    regionCities: settings.responsibleCities,
+                    session: session,
+                    startAtPreview: debugScene == .importPreview,
+                    onFinished: { model.reload() }
+                )
+            }
+            .fileImporter(
+                isPresented: $showFileImporter,
+                allowedContentTypes: [.commaSeparatedText, .plainText, .text, .data]
+            ) { result in
+                switch result {
+                case .success(let url):
+                    let scoped = url.startAccessingSecurityScopedResource()
+                    defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                    if let data = try? Data(contentsOf: url),
+                       let session = ImportSession.make(fileName: url.lastPathComponent, data: data) {
+                        importSession = session
+                    } else {
+                        importError = "Dosya okunamadı veya veri satırı yok. CSV (UTF-8 ya da Windows-1254) olmalı."
+                    }
+                case .failure(let error):
+                    importError = error.localizedDescription
+                }
+            }
+            .alert("İçe aktarılamadı", isPresented: Binding(get: { importError != nil }, set: { if !$0 { importError = nil } })) {
+                Button("Tamam", role: .cancel) {}
+            } message: {
+                Text(importError ?? "")
             }
             .sheet(item: $editTarget, onDismiss: { model.reload() }) { target in
                 CustomerFormView(
@@ -211,6 +252,10 @@ struct CustomersView: View {
             if let showcase { editTarget = CustomerEditTarget(customer: showcase) }
         case .visitForm:
             if let showcase { debugVisit = DebugVisitTarget(customer: showcase, seed: .showcaseForm) }
+        case .importMapping, .importPreview:
+            #if DEBUG
+            importSession = ImportSession.make(fileName: "musteriler.csv", data: Data(SampleData.importCSV.utf8))
+            #endif
         case .visitRecording:
             if let showcase { debugVisit = DebugVisitTarget(customer: showcase, seed: .showcaseRecording) }
         }

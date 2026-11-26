@@ -557,3 +557,15 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
   **Elle denenmesi gerekenler (gerçek iPhone):** mikrofon/konuşma tanıma izin akışı, Türkçe canlı metin, duraklat/devam,
   1 dakikayı aşan kayıt (otomatik parçalama), izin reddedilince klavyeyle yazma.
 - Bu noktada duruldu; sıradaki iş için yeni talimat bekleniyor.
+
+## Faz 3b – CSV ile müşteri içe aktarma (kararlar)
+
+- **Bölge filtre çubuğu (adım 0):** çubuk zaten yatay kaydırılabilir; üstteki boşluk `listSectionSpacing(.compact)` + `contentMargins(.top, 0)` ile kapatıldı. Sağ kenardaki "kırpılma" kaydırılabilir şeridin doğal görünümüdür.
+- **Kodlama/ayraç:** önce UTF-8 (BOM atılır), olmazsa Windows-1254. Ayraç ilk satırdaki tırnak dışı `;` / `,` / sekme sayısına göre seçilir; eşitlikte `;`.
+- **Eşleme:** başlıklar küçük harf + Türkçe karakter sadeleştirilip bilinen yazımlarla (tam, sonra "içerir") eşlenir; her sütun tek alana gider. Firma eşlenmeden "Önizle" kapalı.
+- **Çakışma:** aynı firma adı + şehir (büyük/küçük harf, Türkçe karakter, fazla boşluk duyarsız). Şehir yazımı bölge listesi/kataloga göre resmî ada çevrilerek karşılaştırılır. Çakışanlar için toplu "Atla / Güncelle" (satır bazında seçim yok). Güncelle: yalnızca dolu CSV alanları üstüne yazar; durum ve değerlendirme değişmez.
+- **Hatalı:** firma adı boş, e-posta biçimi geçersiz, dosyada aynı firma+şehrin tekrarı (ilk satır geçerli, sonrakiler hatalı).
+- **Yeni müşteri:** durum "Aday", değerlendirme önizlemedeki seçim (varsayılan Potansiyelli). İlçe şehrin resmî listesiyle eşleştirilir, eşleşmezse olduğu gibi.
+- **Telefon/e-posta:** Customer'da bu alanlar yok; Contact'a yazılır. Yetkili adı yoksa "Genel" adlı kişi açılır. Aynı adlı kişi varsa yenisi eklenmez (boş telefon/e-posta doldurulur).
+- **Şablon:** Ayarlar → "İçe aktarma" → ShareLink; UTF-8 + BOM, `;` ayraçlı (Türkçe Excel'de doğrudan açılır).
+- Giriş noktası: Müşteriler üst çubuğundaki indirme simgesi (Dosyalar'dan CSV seçimi).

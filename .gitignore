@@ -10,7 +10,8 @@ AuthKey_*
 .env.*
 secrets.xcconfig
 *.secret
-# Müşteri verisi (CSV içe aktarma dosyaları vb.)
+# Müşteri verisi (CSV içe aktarma dosyaları, uygulama yedekleri vb.)
+SahaSatis-Yedek-*.json
 *.csv
 *.xlsx
 *.xls

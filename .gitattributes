@@ -1,0 +1,2 @@
+# Betikler macOS runner'ında çalışır: her zaman LF.
+*.sh text eol=lf

@@ -40,6 +40,8 @@ final class TodayModel {
     private(set) var sections = TodaySections()
     /// Bugün yapılan ziyaretler, yeniden eskiye.
     private(set) var visitsToday: [Visit] = []
+    /// En az bir müşteri var mı? (Boş uygulamada "yedek alınmadı" uyarısı gösterilmez.)
+    private(set) var hasData = false
     var errorMessage: String?
 
     init(repositories: Repositories, calendar: Calendar = .current) {
@@ -56,6 +58,7 @@ final class TodayModel {
         do {
             sections = TodaySections.make(from: try repositories.tasks.openTasks(), now: now, calendar: calendar)
             visitsToday = try repositories.visits.visits(on: now, calendar: calendar)
+            hasData = try !repositories.customers.fetchAll().isEmpty
         } catch {
             errorMessage = "Bugün ekranı yüklenemedi: \(error.localizedDescription)"
         }

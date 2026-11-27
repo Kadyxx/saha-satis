@@ -12,6 +12,7 @@ struct VisitFormView: View {
     @State private var preview: SuggestionPreview?
     @State private var assistantMessage: String?
     @State private var promptCopied = false
+    @State private var confirmingDiscard = false
 
     private struct ShareText: Identifiable {
         let id = UUID()
@@ -25,6 +26,7 @@ struct VisitFormView: View {
         customer: Customer?,
         visit: Visit?,
         seed: VisitFormSeed = VisitFormSeed(),
+        restoring draft: VisitFormDraft? = nil,
         onSaved: @escaping () -> Void = {}
     ) {
         self.context = context
@@ -36,8 +38,16 @@ struct VisitFormView: View {
             engine: context.makeSpeechEngine(),
             customer: customer,
             visit: visit,
-            seed: seed
+            seed: seed,
+            draftStore: context.draftStore,
+            restoring: draft
         ))
+    }
+
+    /// Yarım kalan taslaktan açar. Düzenlenen ziyaret bu arada silindiyse yeni ziyaret olarak açılır.
+    init(context: AppContext, resuming draft: VisitFormDraft) {
+        let visit = draft.existingVisitID.flatMap { try? context.repositories.visits.visit(id: $0) }
+        self.init(context: context, customer: nil, visit: visit, restoring: draft)
     }
 
     var body: some View {
@@ -69,7 +79,23 @@ struct VisitFormView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("İptal") {
                         model.voice.stop()
-                        dismiss()
+                        if model.hasUnsavedChanges {
+                            confirmingDiscard = true
+                        } else {
+                            model.discardDraft()
+                            dismiss()
+                        }
+                    }
+                    .confirmationDialog(
+                        "Kaydedilmemiş ziyaret notu silinsin mi?",
+                        isPresented: $confirmingDiscard,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Sil ve çık", role: .destructive) {
+                            model.discardDraft()
+                            dismiss()
+                        }
+                        Button("Düzenlemeye dön", role: .cancel) {}
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
@@ -105,6 +131,20 @@ struct VisitFormView: View {
             }
         }
         .tint(Theme.brandText)
+        // Kaydedilmemiş not kaydırarak yanlışlıkla kapatılmasın; çıkış "İptal" veya "Kaydet" ile.
+        .interactiveDismissDisabled(model.hasUnsavedChanges)
+        .onChange(of: model.draftContent) { model.scheduleDraftSave() }
+        // Claude uygulamasına geçerken olduğu gibi arka plana gidişte beklemeden yaz.
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { _ in
+            model.flushDraft()
+        }
+        // Form "Kaydet"/"İptal" dışında kapandıysa (ör. altındaki ekran kapandı) taslak sorulsun.
+        .onDisappear {
+            guard !model.isFinished else { return }
+            model.voice.stop()
+            model.flushDraft()
+            context.checkForPendingDraft()
+        }
     }
 
     // MARK: - Bölümler

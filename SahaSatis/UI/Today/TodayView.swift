@@ -90,6 +90,11 @@ struct TodayView: View {
             if reminders.authorization == .denied {
                 notificationsOffSection
             }
+            if let reminder = BackupReminder.evaluate(
+                lastBackup: settings.lastBackupAt, hasData: model.hasData, now: Date()
+            ) {
+                backupSection(reminder)
+            }
             WeekStripSection(settings: settings, now: Date()) { planDay = PlanDayTarget(day: $0) }
             visitsSection
             if model.sections.isEmpty {
@@ -204,6 +209,28 @@ struct TodayView: View {
                 }
                 .buttonStyle(.borderless)
             }
+        }
+        .listRowBackground(Theme.surface)
+    }
+
+    /// Küçük yedek uyarısı; dokununca Ayarlar sekmesi açılır.
+    private func backupSection(_ reminder: BackupReminder) -> some View {
+        Section {
+            Button { appContext.requestedTab = .settings } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "externaldrive.badge.exclamationmark")
+                        .foregroundStyle(Theme.overdue)
+                        .accessibilityHidden(true)
+                    Text(reminder.message)
+                        .font(.footnote)
+                        .foregroundStyle(Theme.textPrimary)
+                    Spacer(minLength: 8)
+                    Text("Yedekle")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Theme.brandText)
+                }
+            }
+            .buttonStyle(.plain)
         }
         .listRowBackground(Theme.surface)
     }

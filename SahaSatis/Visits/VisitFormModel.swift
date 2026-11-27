@@ -55,6 +55,16 @@ final class VisitFormModel {
     private(set) var rawTranscript = ""
     private var lastAppliedSummary: String?
 
+    private let draftStore: VisitDraftStore?
+    private let draftDelay: Duration
+    /// Formun açılıştaki hali; taslak yalnızca bundan farklıysa saklanır.
+    private var baseline = VisitFormDraft()
+    /// Depodaki taslak bu forma mı ait (o yazdı ya da ondan geri yüklendi)? Başka taslağı silmemek için.
+    private var ownsDraft = false
+    /// Kaydedildi veya vazgeçildi: bundan sonra taslak yazılmaz.
+    private(set) var isFinished = false
+    @ObservationIgnored private var draftTask: Task<Void, Never>?
+
     private let repositories: Repositories
     private let reminderMinutes: Int
     private let defaultCurrency: Currency
@@ -66,8 +76,13 @@ final class VisitFormModel {
         engine: SpeechEngine,
         customer: Customer?,
         visit: Visit? = nil,
-        seed: VisitFormSeed = VisitFormSeed()
+        seed: VisitFormSeed = VisitFormSeed(),
+        draftStore: VisitDraftStore? = nil,
+        draftDelay: Duration = .seconds(1),
+        restoring restoredDraft: VisitFormDraft? = nil
     ) {
+        self.draftStore = draftStore
+        self.draftDelay = draftDelay
         self.repositories = repositories
         self.reminderMinutes = reminderMinutes
         self.defaultCurrency = defaultCurrency
@@ -105,6 +120,112 @@ final class VisitFormModel {
             reloadContacts()
             selectedContactIDs = Set(contacts.prefix(seed.selectFirstContacts).map(\.id))
         }
+        baseline = draftContent
+        if let restoredDraft { restore(restoredDraft) }
+    }
+
+    // MARK: - Taslak
+
+    /// Formun şu anki içeriği (`savedAt` sabit kalır; değişiklik karşılaştırması için). Kayıt sürerken henüz
+    /// forma teslim edilmemiş canlı metin de nota ve ham metne dahildir.
+    var draftContent: VisitFormDraft {
+        let partial = voice.partialText.trimmingCharacters(in: .whitespacesAndNewlines)
+        var content = VisitFormDraft()
+        content.existingVisitID = existingVisit?.id
+        content.customerID = customer?.id
+        content.customerName = customer?.name ?? ""
+        content.contactIDs = selectedContactIDs.sorted { $0.uuidString < $1.uuidString }
+        content.typeRaw = type.rawValue
+        content.date = date
+        content.topic = topic
+        content.note = Self.appending(partial, to: note)
+        content.nextStep = nextStep
+        content.nextStepDate = hasNextStepDate ? nextStepDate : nil
+        if case .existing(let id) = opportunityLink { content.opportunityID = id }
+        content.wantsNewOpportunity = opportunityLink == .new
+        content.newOpportunityTitle = newOpportunityTitle
+        content.rawTranscript = Self.appending(partial, to: rawTranscript)
+        content.lastAppliedSummary = lastAppliedSummary
+        return content
+    }
+
+    var hasUnsavedChanges: Bool {
+        guard !isFinished else { return false }
+        let content = draftContent
+        return content != baseline && (isEditing || content.hasUserInput)
+    }
+
+    /// İçerik değişince çağrılır. Art arda değişiklikler tek yazmada birleşir; bekleyen yazma ertelenmez,
+    /// böylece aralıksız yazarken veya konuşurken de en geç `draftDelay` sonra kaydedilir.
+    func scheduleDraftSave() {
+        guard draftStore != nil, !isFinished, draftTask == nil else { return }
+        let delay = draftDelay
+        draftTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled else { return }
+            self?.flushDraft()
+        }
+    }
+
+    /// Hemen yazar (uygulama arka plana giderken). Değişiklik kalmadıysa kendi taslağını siler.
+    func flushDraft(now: Date = Date()) {
+        draftTask?.cancel()
+        draftTask = nil
+        guard let draftStore, !isFinished else { return }
+        if hasUnsavedChanges {
+            var draft = draftContent
+            draft.savedAt = now
+            do {
+                try draftStore.save(draft)
+                ownsDraft = true
+            } catch {
+                // Taslak yedek amaçlıdır; yazılamaması formu engellemez.
+            }
+        } else if ownsDraft {
+            draftStore.delete()
+            ownsDraft = false
+        }
+    }
+
+    /// Kaydetme ve vazgeçme: taslak silinir, bir daha yazılmaz.
+    func discardDraft() {
+        draftTask?.cancel()
+        draftTask = nil
+        isFinished = true
+        if ownsDraft { draftStore?.delete() }
+        ownsDraft = false
+    }
+
+    /// Taslağı forma geri yükler. Bu arada silinmiş kişi ve fırsat atlanır.
+    private func restore(_ draft: VisitFormDraft) {
+        if existingVisit == nil {
+            customer = draft.customerID.flatMap { try? repositories.customers.customer(id: $0) } ?? customer
+            reloadContacts()
+        }
+        selectedContactIDs = Set(draft.contactIDs).intersection(contacts.map(\.id))
+        type = VisitType(rawValue: draft.typeRaw) ?? .visit
+        date = draft.date
+        topic = draft.topic
+        note = draft.note
+        nextStep = draft.nextStep
+        hasNextStepDate = draft.nextStepDate != nil
+        if let day = draft.nextStepDate { nextStepDate = day }
+        rawTranscript = draft.rawTranscript
+        lastAppliedSummary = draft.lastAppliedSummary
+        newOpportunityTitle = draft.newOpportunityTitle
+        if draft.wantsNewOpportunity {
+            opportunityLink = .new
+        } else if let id = draft.opportunityID, (try? repositories.opportunities.opportunity(id: id)) != nil {
+            opportunityLink = .existing(id)
+        } else {
+            opportunityLink = .none
+        }
+        ownsDraft = true
+    }
+
+    private static func appending(_ segment: String, to text: String) -> String {
+        if segment.isEmpty { return text }
+        return text.isEmpty ? segment : text + " " + segment
     }
 
     var isEditing: Bool { existingVisit != nil }
@@ -181,8 +302,8 @@ final class VisitFormModel {
 
     /// Sesli not parçasını nota ve ham metne ekler.
     func appendDictation(_ segment: String) {
-        note = note.isEmpty ? segment : note + " " + segment
-        rawTranscript = rawTranscript.isEmpty ? segment : rawTranscript + " " + segment
+        note = Self.appending(segment, to: note)
+        rawTranscript = Self.appending(segment, to: rawTranscript)
     }
 
     // MARK: - Claude ile düzenleme
@@ -251,6 +372,7 @@ final class VisitFormModel {
         let service = VisitService(repositories: repositories, reminderMinutes: reminderMinutes, defaultCurrency: defaultCurrency)
         do {
             try service.save(draft, customer: customer, contacts: selected, opportunity: selectedOpportunity(), existing: existingVisit)
+            discardDraft()
             return true
         } catch {
             errorMessage = "Ziyaret kaydedilemedi: \(error.localizedDescription)"

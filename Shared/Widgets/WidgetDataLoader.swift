@@ -27,7 +27,9 @@ enum WidgetDataLoader {
     }
 
     /// Gerçek depoyu açar; açılamazsa boş veri döner (widget "Bugün için takip yok" gösterir).
-    static func loadFromStore() -> WidgetData {
+    /// App Group yoksa uygulamanın deposuna erişilemez; widget kendi klasöründe boş bir depo oluşturmaz.
+    static func loadFromStore(isGroupAvailable: Bool = AppGroup.isAvailable) -> WidgetData {
+        guard isGroupAvailable else { return WidgetData() }
         do {
             let container = try Persistence.makeContainer()
             return try withExtendedLifetime(container) {

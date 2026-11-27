@@ -102,6 +102,7 @@ final class AppSettings: ObservableObject {
         static let cityPlan = "weekPlan.cities"
         static let productFamilies = "installedBase.productFamilies"
         static let claudeInstruction = "assistant.claudeInstruction"
+        static let lastBackupAt = "backup.lastAt"
     }
 
     private let defaults: UserDefaults
@@ -166,6 +167,11 @@ final class AppSettings: ObservableObject {
         didSet { defaults.set(try? JSONEncoder().encode(productFamilies), forKey: Key.productFamilies) }
     }
 
+    // MARK: Yedekleme
+
+    /// Bu cihazda en son tamamlanan yedeklemenin zamanı (yedek dosyasına girmez).
+    @Published var lastBackupAt: Date? { didSet { defaults.set(lastBackupAt, forKey: Key.lastBackupAt) } }
+
     // MARK: Yardımcı
 
     /// Claude'a gönderilen talimat. Varsayılana eşitse saklanmaz (ileride varsayılan iyileşirse kullanıcıya da gelsin).
@@ -215,6 +221,7 @@ final class AppSettings: ObservableObject {
         defaultCurrency = defaults.string(forKey: Key.currency).flatMap(Currency.init(rawValue:)) ?? .tl
         crmEmail = defaults.string(forKey: Key.crmEmail) ?? ""
         claudeInstruction = defaults.string(forKey: Key.claudeInstruction) ?? Self.defaultClaudeInstruction
+        lastBackupAt = defaults.object(forKey: Key.lastBackupAt) as? Date
         cityPlan = (defaults.dictionary(forKey: Key.cityPlan) as? [String: [String]]) ?? [:]
         productFamilies = defaults.data(forKey: Key.productFamilies)
             .flatMap { try? JSONDecoder().decode([ProductFamily].self, from: $0) } ?? ProductFamily.defaults

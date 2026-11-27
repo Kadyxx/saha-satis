@@ -62,6 +62,20 @@ final class ReportActivityItem: NSObject, UIActivityItemSource {
     ) -> String { subject }
 }
 
+/// Dosya paylaşımı ("Dosyalara Kaydet" dahil). `onFinish(true)`: kullanıcı bir işlemi tamamladı.
+struct FileShareSheet: UIViewControllerRepresentable {
+    let url: URL
+    let onFinish: (Bool) -> Void
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let controller = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+        controller.completionWithItemsHandler = { _, completed, _, _ in onFinish(completed) }
+        return controller
+    }
+
+    func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}
+}
+
 /// Mail hesabı yoksa açılan sistem paylaşım menüsü.
 struct ShareSheet: UIViewControllerRepresentable {
     let text: String

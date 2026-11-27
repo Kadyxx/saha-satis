@@ -17,12 +17,14 @@ enum Persistence {
     /// - iCloud (CloudKit) senkronu bilinçli olarak kapalıdır (`cloudKitDatabase: .none`);
     ///   giriş ve iCloud ayrı bir adımda açılacak.
     /// - `groupContainer: .automatic`: imzalı derlemede App Group konteynerini kullanır
-    ///   (widget'ın aynı depoyu okuyabilmesi için); imzasız simülatör derlemesinde varsayılan konuma düşer.
+    ///   (widget'ın aynı depoyu okuyabilmesi için). Grup klasörü yoksa (imzasız derleme, yetki verilemedi)
+    ///   açıkça uygulamanın kendi klasörü kullanılır.
     @MainActor
     static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
         let configuration = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: inMemory,
+            groupContainer: AppGroup.isAvailable ? .automatic : .none,
             cloudKitDatabase: .none
         )
         return try ModelContainer(for: schema, configurations: [configuration])

@@ -1,0 +1,108 @@
+name: Screenshots
+
+# Yalnızca main'e birleştirmede (main'e push), "screenshots" etiketli PR'da veya elle çalışır.
+# Uygulama bir kez derlenir; simülatör görüntüleri üç paralel parçada çekilir.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [labeled, opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    # Etiket ekleme olayında yalnızca "screenshots" eklenince; diğer olaylarda PR etiketi taşıyorsa.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.action == 'labeled' && github.event.label.name == 'screenshots') ||
+      (github.event.action != 'labeled' && contains(github.event.pull_request.labels.*.name, 'screenshots'))
+    # Eşzamanlılık iş düzeyinde: atlanan işler (başka etiket eklenmesi) süren koşuyu iptal etmesin.
+    concurrency:
+      group: screenshots-app-${{ github.ref }}
+      cancel-in-progress: true
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: XcodeGen kur
+        run: brew install xcodegen
+
+      - name: Xcode projesini üret
+        run: xcodegen generate
+
+      - name: Simülatör seç ve aç
+        id: sim
+        run: bash scripts/ci/boot-simulator.sh
+
+      - name: Derle ve widget görüntülerini üret
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/screenshots build
+          TEST_RUNNER_SCREENSHOT_DIR="$PWD/artifacts/screenshots" \
+          xcodebuild test \
+            -project SahaSatis.xcodeproj \
+            -scheme SahaSatis \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build/DerivedData \
+            -only-testing:SahaSatisTests/ScreenshotTests \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee artifacts/xcodebuild.log
+          tar -czf build/app.tar.gz -C build/DerivedData/Build/Products/Debug-iphonesimulator SahaSatis.app
+
+      - name: Uygulamayı parçalara aktar
+        uses: actions/upload-artifact@v4
+        with:
+          name: sim-app
+          path: build/app.tar.gz
+          retention-days: 1
+
+      - name: Widget görüntülerini yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-widgets
+          path: artifacts/screenshots/
+          retention-days: 14
+
+  shots:
+    needs: app
+    runs-on: macos-15-intel
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    concurrency:
+      group: screenshots-${{ matrix.shard }}-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Uygulamayı indir
+        uses: actions/download-artifact@v4
+        with:
+          name: sim-app
+          path: build
+
+      - name: Simülatör seç ve aç
+        id: sim
+        run: bash scripts/ci/boot-simulator.sh
+
+      - name: Ekran görüntülerini çek
+        run: |
+          set -euo pipefail
+          tar -xzf build/app.tar.gz -C build
+          bash scripts/ci/screenshots.sh "${{ steps.sim.outputs.udid }}" build/SahaSatis.app ${{ matrix.shard }} 3
+
+      - name: Görüntüleri yükle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.shard }}
+          path: artifacts/screenshots/
+          if-no-files-found: warn
+          retention-days: 14

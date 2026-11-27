@@ -36,7 +36,9 @@ struct SahaSatisApp: App {
                 repositories: repositories,
                 settings: DebugLaunch.makeSettings(),
                 makeSpeechEngine: DebugLaunch.speechEngineFactory(),
-                notificationScheduler: notificationScheduler
+                notificationScheduler: notificationScheduler,
+                draftStore: DebugLaunch.makeDraftStore(repositories: repositories),
+                backups: SwiftDataBackupRepository(context: container.mainContext)
             )
             if !DebugLaunch.skipNotifications {
                 UNUserNotificationCenter.current().delegate = context.notificationResponder

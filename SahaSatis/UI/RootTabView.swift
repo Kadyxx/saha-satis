@@ -91,8 +91,10 @@ struct RootTabView: View {
         }
         // Uygulama kapanırken kaydedilmemiş ziyaret formu varsa.
         .alert("Yarım kalan ziyaret notu var", isPresented: draftPromptBinding, presenting: draftPrompt) { _ in
+            // "Sil"e bilerek `.destructive` rolü verilmedi: o rolde sistem kendiliğinden "Vazgeç" ekliyor ve
+            // soru yanıtsız kapanınca sonraki form taslağın üstüne yazabiliyor.
             Button("Devam et") { context.resumePendingDraft() }
-            Button("Sil", role: .destructive) { context.discardPendingDraft() }
+            Button("Sil") { context.discardPendingDraft() }
         } message: { draft in
             Text(Self.draftMessage(draft))
         }

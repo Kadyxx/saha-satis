@@ -39,6 +39,8 @@ enum DebugScene: String {
     case claudePreview
     case claudeBroken
     case settingsClaude
+    case draftPrompt
+    case settingsBackup
 }
 
 enum DebugLaunch {
@@ -79,6 +81,27 @@ enum DebugLaunch {
         return { AppleSpeechEngine() }
     }
 
+    /// Ziyaret taslağı deposu. Örnek veri modunda diske yazılmaz (bir senaryonun taslağı diğerine taşmasın).
+    @MainActor
+    static func makeDraftStore(repositories: Repositories) -> VisitDraftStore {
+        #if DEBUG
+        if useSampleData {
+            var draft: VisitFormDraft?
+            if scene == .draftPrompt,
+               let customer = try? repositories.customers.fetchAll().first(where: { $0.name == "Örnek Makina A.Ş." }) {
+                var sample = VisitFormDraft()
+                sample.customerID = customer.id
+                sample.customerName = customer.name
+                sample.note = "Hat 3 için PLC yenileme konuşuldu."
+                sample.savedAt = Date().addingTimeInterval(-25 * 60)
+                draft = sample
+            }
+            return InMemoryVisitDraftStore(draft: draft)
+        }
+        #endif
+        return FileVisitDraftStore()
+    }
+
     /// Ayarlar nesnesi. Örnek veri modunda gerçek App Group ayarlarına dokunmayan geçici bir
     /// UserDefaults kümesi ve hayali profil kullanılır.
     static func makeSettings() -> AppSettings {
@@ -91,6 +114,9 @@ enum DebugLaunch {
             settings.fullName = "Örnek Satış Mühendisi"
             settings.jobTitle = "Saha Satış Mühendisi"
             settings.crmEmail = "crm@example.com"
+            if scene == .settingsBackup {
+                settings.lastBackupAt = Date().addingTimeInterval(-9 * 24 * 3600)
+            }
             // Haftalık şehir planı (hayali): şerit ve "Önerilen ziyaretler" ekran görüntüleri için.
             var plan = WeekPlan()
             let week = WeekPlan.displayedWeek(at: Date(), calendar: .current)

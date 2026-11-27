@@ -257,7 +257,7 @@ struct CustomersView: View {
         case .customers, .settings, .settingsReminders, .settingsCities, .today, .todayForm, .export, .exportPreview,
              .opportunities, .opportunityDetail, .opportunityForm, .opportunityLost,
              .quotes, .quoteDetail, .quoteForm,
-             .region, .regionCity, .regionDistrict, .weekDay, .settingsClaude:
+             .region, .regionCity, .regionDistrict, .weekDay, .settingsClaude, .settingsBackup, .draftPrompt:
             break
         case .claudeButtons, .claudePreview, .claudeBroken:
             let seed: VisitFormSeed = scene == .claudeButtons

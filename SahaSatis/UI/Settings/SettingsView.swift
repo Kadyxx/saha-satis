@@ -16,6 +16,7 @@ struct SettingsView: View {
     @State private var followUpText: String
 
     private let remindersAnchor = "reminders-anchor"
+    private let backupAnchor = "backup-anchor"
 
     init(settings: AppSettings, debugScene: DebugScene? = nil) {
         _settings = ObservedObject(wrappedValue: settings)
@@ -44,15 +45,21 @@ struct SettingsView: View {
                     assistantSection
                     exportSection
                     importSection
+                    BackupSettingsSection(settings: settings)
+                        .id(backupAnchor)
                     aboutSection
                 }
                 .scrollContentBackground(.hidden)
                 .background(Theme.background)
                 .task {
-                    // Yalnızca ekran görüntüsü senaryosu: hatırlatmalar bölümüne kaydır.
-                    guard debugScene == .settingsReminders else { return }
+                    // Yalnızca ekran görüntüsü senaryoları: ilgili bölüme kaydır.
+                    guard debugScene == .settingsReminders || debugScene == .settingsBackup else { return }
                     try? await Task.sleep(for: .milliseconds(600))
-                    proxy.scrollTo(remindersAnchor, anchor: .top)
+                    if debugScene == .settingsBackup {
+                        proxy.scrollTo(backupAnchor, anchor: .center)
+                    } else {
+                        proxy.scrollTo(remindersAnchor, anchor: .top)
+                    }
                 }
             }
             .navigationTitle("Ayarlar")

@@ -614,7 +614,7 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
 - **Onay:** önizlemede "Forma uygula" denmeden form değişmez. Boş gelen alanlar formdaki değeri silmez; not Özet ile değiştirilir. Ziyaret yine ancak "Kaydet" ile kaydedilir.
 - **Ham not:** uygulamadan hemen önce formdaki not `Visit.transcript`'e eklenir (dikte metni zaten oradaysa tekrarlanmaz; önceki öneri değiştirilmeden duruyorsa eklenmez). Formda "Ham not (saklanıyor)" açılır alanından görülür. CRM raporuna girmez.
 - **Ayarlar → Claude ile düzenleme → Claude talimatı:** düzenlenebilir, "Varsayılana dön" (onaylı). Varsayılana eşit metin saklanmaz; boş bırakılırsa varsayılan gönderilir.
-- **Bilinen sınır:** form açıkken Claude uygulamasına geçilir; iOS uygulamayı arka planda kapatırsa kaydedilmemiş form kaybolur (ham metin panodaki gönderilen metinde kalır, cevap kopyalanınca onun yerini alır).
+- **Bilinen sınır (toparlama turunda giderildi):** iOS uygulamayı arka planda kapatırsa form kayboluyordu; artık ziyaret taslağı saklanıyor (aşağıda).
 - **Ekran görüntüleri:** `screen-claudeButtons-*`, `screen-claudePreview-*`, `screen-claudeBroken-*`, `screen-settingsClaude-*`.
 - **Elle denenmesi gerekenler (gerçek iPhone):** paylaşım menüsünde Claude uygulamasının çıkması ve metnin gelmesi, cevabı kopyalayıp yapıştırma (izin penceresi), Claude'un şablona uyması.
 
@@ -623,3 +623,34 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
 - 4a: CI ilk denemede yeşil (416 test). PR #12. İlk koşuda döngünün ilk senaryosunun görüntüsü erken alındı; yeni senaryolar döngünün sonuna taşındı.
 - 4b: derleme ve testler ilk denemede yeşil (437 test). Yalnızca `claudePreview` görüntüsü önizleme açılmadan alınmıştı: 2. denemede Claude senaryolarının beklemesi 12 sn yapıldı, ama iş 30 dk sınırını aşıp iptal oldu (yavaş runner; önceki yeşil koşu da 27,5 dk). 3. denemede sınır 45 dk yapıldı: yeşil ve görüntüler doğru. **Dikkat:** ekran görüntüsü döngüsü işin yarıdan fazlasını alıyor; senaryo sayısı artarsa döngüyü ayrı işe bölmek gerekebilir.
 - Gerçek iPhone denemesi yapılmadan SPEC'e göre Faz 4 kapanmış sayılmaz. "Müşteri değerlendirme önerisi" (SPEC → Yapay zekâ) bu turun kapsamında değildi, yapılmadı.
+
+## Toparlama turu – ziyaret taslağı (kararlar)
+
+- **Nerede:** uygulamanın Application Support klasöründe tek dosya (`visit-draft.json`); App Group'a, buluta veya yedeğe girmez. Aynı anda tek form açılabildiği için tek taslak yeterli.
+- **Ne zaman yazılır:** değişiklikten en geç 1 sn sonra (art arda değişiklikler birleşir; bekleyen yazma ertelenmez, yoksa aralıksız konuşurken hiç yazılmazdı). Uygulama arka plana giderken beklemeden yazılır (Claude'a geçiş senaryosu). Sesli notun henüz teslim edilmemiş canlı metni de taslağa girer.
+- **Ne taslak sayılır:** yeni ziyarette metin, işaretli kişi veya takip tarihi; yalnızca müşteri seçmek sayılmaz. Düzenlemede açılıştaki halden her fark. Değişiklik geri alınırsa taslak silinir.
+- **Ne zaman silinir:** "Kaydet" ve onaylanan "İptal" ("Kaydedilmemiş ziyaret notu silinsin mi?"). Değişiklik varken form kaydırarak kapatılamaz. Form başka yoldan kapanırsa taslak durur ve soru hemen sorulur.
+- **Soru:** açılışta "Yarım kalan ziyaret notu var" → "Devam et" / "Sil". Yanıtlanana kadar widget'ın "+ Ziyaret" bağlantısı form açmaz. "Devam et"ten sonra taslak, form kaydedilene kadar diskte durur.
+- Faz 4b'deki "uygulama kapanırsa form kaybolur" sınırı bununla kalktı (en fazla son ~1 sn kaybolabilir).
+
+## Toparlama turu – CI (kararlar)
+
+- **`build.yml`:** her dalın her push'unda iki iş: birim testleri ve FreeDevice cihaz derlemesi (+ kimlik/yetki doğrulaması, `scripts/ci/check-freedevice.sh`). Aynı repodan açılan PR'da `pull_request` işleri atlanır (aynı commit iki kez derlenmesin); fork PR'larında çalışır.
+- **`screenshots.yml`:** yalnızca `main`'e push, `screenshots` etiketli PR veya elle. Bir iş uygulamayı derleyip widget görüntülerini üretir; simülatör görüntüleri üç paralel parçada çekilir (`scripts/ci/screenshots.sh`; yeni senaryo betikteki listeye eklenir). Artifact'ler: `screenshots-widgets`, `screenshots-1..3`; 14 gün saklanır.
+- FreeDevice derlemesi ayrıca Release türü derlemeyi de ilk kez CI'ya sokar (DEBUG koduna yanlışlıkla bağımlılık yakalanır).
+
+## Toparlama turu – FreeDevice (kararlar)
+
+- **Yapılandırma:** `project.yml` → `configs.FreeDevice` (Release türü; örnek veri ve DEBUG senaryoları derlenmez), şema `SahaSatis-FreeDevice`. Kimlikler `com.kadyxx.sahasatis[.widget]`, `group.com.kadyxx.sahasatis`. Debug/Release kimlikleri değişmedi.
+- **Yetkiler:** uygulama yetki dosyaları artık XcodeGen üretmiyor, `Config/` altında elle duruyor (yapılandırmaya göre dosya seçebilmek için). Normal dosyanın içeriği öncekiyle aynı; FreeDevice dosyasında yalnızca App Group var. Widget yetkisi (yalnızca App Group) değişmedi.
+- **Kod:** uygulamada zaten CloudKit veya Sign in with Apple kodu yok (`cloudKitDatabase: .none`), bu yüzden yetkileri kapatmak davranışı değiştirmiyor. App Group klasörü alınamazsa (`AppGroup.isAvailable`) depo uygulamanın kendi klasöründe açılır, widget depo açmadan boş durum gösterir.
+- **Sınır:** App Group'lu ve App Group'suz kurulumda veri farklı yerdedir; geçiş yedekle/geri yükle ile yapılır (rehberde yazılı). Ücretsiz hesapla gerçek imzalama ve cihaza kurulum CI'da denenemez; Mac'te ilk kurulumda doğrulanacak.
+
+## Toparlama turu – yedekleme (kararlar)
+
+- **Kapsam:** 8 modelin tüm kayıtları, ilişkileri (id ile) ve ayarlar (profil, şehirler, hatırlatmalar, haftalık plan, ürün aileleri, CRM adresi, Claude talimatı). Girmeyenler: son yedek tarihi ve yarım kalan taslak (cihaza ait).
+- **Biçim:** `SahaSatis-Yedek-YYYY-AA-GG-SSDD.json`, `format`/`version` başlıklı; tarihler kayıpsız (sayısal). Test, modele eklenip yedeğe eklenmeyen alanı yakalar. İleride eklenen alanlar eski yedekler açılsın diye opsiyonel olmalı.
+- **Dışa aktarma:** sistem paylaşım menüsü ("Dosyalara Kaydet" dahil). "Son yedek" yalnızca işlem tamamlanırsa güncellenir ("Kopyala" da tamamlanmış sayılır; uygulama dosyanın nereye gittiğini bilemez). Geçici dosya sonra silinir. **Dosya şifresizdir ve müşteri verisi içerir**; `.gitignore`'a eklendi.
+- **Geri yükleme:** birleştirme yok, **tümünü değiştirir**. Önce dosyanın tamamı doğrulanır (başka dosya / bozuk / yeni sürüm reddedilir), sonra özetli onay sorulur. Silme + ekleme tek `save`; hata olursa geri alınır. İşlem sırasında ekranlar kaldırılıp yeniden kurulur (silinmiş kayda bakan görünüm çökmesin). Bekleyen taslak silinir; hatırlatmalar ve widget'lar yeniden hesaplanır.
+- **Uyarı:** Bugün ekranında, son yedek 7 günden eskiyse; hiç yedek yoksa yalnızca en az bir müşteri varken. Dokununca Ayarlar.
+- iCloud yedeği yok; FreeDevice kurulumunda tek koruma budur (uygulama silinirse veri gider).

@@ -654,3 +654,11 @@ akışı, widget'ların gerçek ana/kilit ekranında yerleşimi (özellikle büy
 - **Geri yükleme:** birleştirme yok, **tümünü değiştirir**. Önce dosyanın tamamı doğrulanır (başka dosya / bozuk / yeni sürüm reddedilir), sonra özetli onay sorulur. Silme + ekleme tek `save`; hata olursa geri alınır. İşlem sırasında ekranlar kaldırılıp yeniden kurulur (silinmiş kayda bakan görünüm çökmesin). Bekleyen taslak silinir; hatırlatmalar ve widget'lar yeniden hesaplanır.
 - **Uyarı:** Bugün ekranında, son yedek 7 günden eskiyse; hiç yedek yoksa yalnızca en az bir müşteri varken. Dokununca Ayarlar.
 - iCloud yedeği yok; FreeDevice kurulumunda tek koruma budur (uygulama silinirse veri gider).
+
+## Durum günlüğü – toparlama turu
+
+- Test ve FreeDevice derlemesi ilk denemede yeşil: 470 test (33'ü yeni); FreeDevice kimlik ve yetki doğrulamaları geçti. (`gh run view --log` çıktısı testlerin bir kısmını göstermedi; toplam, artifact'teki `xcodebuild.log`'dan doğrulandı.)
+- Ekran görüntüsü iş akışı ilk denemede yeşil (86 görüntü). Görüntü bir hata gösterdi: "Sil" yıkıcı rolde olunca iOS yarım kalan not sorusuna "Vazgeç" ekliyordu. Rol kaldırıldı; ikinci koşuda yalnızca "Devam et" / "Sil".
+- Süre: test işi ~13 dk, FreeDevice ~3 dk (paralel). Ekran görüntüsü akışı toplam ~27 dk (derleme ~12 dk + paralel parçalar ~15 dk); artık her push'u bekletmiyor.
+- Gerçek cihazda denenmeli: taslağın uygulama kapatılınca geri gelmesi, "Dosyalara Kaydet" ve geri yükleme, ücretsiz hesapla imzalama (App Group dahil), widget'lar.
+- CI artifact'leri artık yalnızca `D:\saha-satis-artifacts` altına indirilir ve iş bitince silinir; daha önce C: sürücüsüne indirilenler (12 klasör, ~243 MB) silindi.
